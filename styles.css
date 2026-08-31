@@ -1,0 +1,1058 @@
+/* ============================================================
+       VARIABLES CSS — ¡EDITA AQUÍ PARA PERSONALIZAR TODO!
+       ============================================================ */
+    :root {
+      /* EDITAR AQUÍ: Colores principales de la interfaz */
+      --color-bg:          #f5f0fb;   /* Fondo general — lila muy claro */
+      --color-surface:     #ffffff;   /* Fondo de tarjetas y paneles */
+      --color-surface-alt: #ede8f7;   /* Fondo alternativo / hover suave */
+      --color-accent:      #9b6dff;   /* Morado lavanda — color principal de acción */
+      --color-accent-dark: #7c4de0;   /* Morado más oscuro para hover de botones */
+      --color-accent-soft: #e9dfff;   /* Versión pastel del acento */
+      --color-text:        #2d2040;   /* Color de texto principal — casi negro morado */
+      --color-text-muted:  #7a6e92;   /* Texto secundario / subtítulos */
+      --color-border:      #ddd6f0;   /* Bordes sutiles */
+      --color-danger:      #e05c6e;   /* Rojo suave para eliminar */
+      --color-danger-soft: #fce8eb;   /* Fondo rojo pastel */
+
+      /* EDITAR AQUÍ: Colores de los botones de estambre en el filtro */
+      /* Agrega o quita líneas "yarn-NombreColor" para añadir o eliminar colores */
+      --yarn-Amarillo:     #f9d423;
+      --yarn-Rosa:         #ff8fab;
+      --yarn-Verde:        #6bcb77;
+      --yarn-Azul:         #4d9de0;
+      --yarn-Morado:       #9b6dff;
+      --yarn-Blanco:       #e8e8e8;
+      --yarn-Naranja:      #ff9a3c;
+      --yarn-Rojo:         #e05c6e;
+      --yarn-Negro:        #3d3d3d;
+      --yarn-Café:         #a0522d;
+
+      /* EDITAR AQUÍ: Fuentes */
+      --font-display: 'Nunito', sans-serif;  /* Fuente de títulos y botones */
+      --font-body:    'Inter', sans-serif;   /* Fuente de textos normales */
+
+      /* EDITAR AQUÍ: Tamaños de fuente */
+      --fs-xs:   0.70rem;
+      --fs-sm:   0.82rem;
+      --fs-base: 0.95rem;
+      --fs-md:   1.05rem;
+      --fs-lg:   1.25rem;
+      --fs-xl:   1.6rem;
+      --fs-2xl:  2.1rem;
+
+      /* EDITAR AQUÍ: Espaciados generales */
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+
+      /* EDITAR AQUÍ: Bordes redondeados */
+      --radius-sm:   6px;
+      --radius-md:   12px;
+      --radius-lg:   18px;
+      --radius-xl:   24px;
+      --radius-full: 9999px;
+
+      /* EDITAR AQUÍ: Sombras */
+      --shadow-sm:  0 2px 8px rgba(90,50,140,.07);
+      --shadow-md:  0 4px 20px rgba(90,50,140,.11);
+      --shadow-lg:  0 8px 32px rgba(90,50,140,.15);
+    }
+
+    /* ============================================================
+       RESET Y BASE
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      font-size: var(--fs-base);
+      color: var(--color-text);
+      background-color: var(--color-bg);
+      /* EDITAR AQUÍ: Patrón de fondo — cambia o elimina para modificar la textura */
+      background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239b6dff' fill-opacity='0.04' fill-rule='evenodd'%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3Ccircle cx='0' cy='0' r='3'/%3E%3Ccircle cx='40' cy='0' r='3'/%3E%3Ccircle cx='0' cy='40' r='3'/%3E%3Ccircle cx='40' cy='40' r='3'/%3E%3C/g%3E%3C/svg%3E");
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; font-family: var(--font-display); border: none; }
+    input, select, textarea { font-family: var(--font-body); }
+
+    /* ============================================================
+       HEADER
+       ============================================================ */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(245,240,251,.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-4) var(--space-6);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+
+    /* EDITAR AQUÍ: Logo/título principal de la app */
+    .header-logo {
+      font-family: var(--font-display);
+      font-size: var(--fs-xl);
+      font-weight: 900;
+      color: var(--color-accent);
+      letter-spacing: -.5px;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .header-logo span {
+      color: var(--color-text);
+    }
+
+    .header-logo-icon {
+      display: inline-block;
+      margin-right: var(--space-2);
+      font-size: 1.4em;
+    }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 160px;
+      position: relative;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    /* EDITAR AQUÍ: Estilos de la barra de búsqueda */
+    #search-input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4) var(--space-3) 2.5rem;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-surface);
+      font-size: var(--fs-base);
+      color: var(--color-text);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    #search-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-soft);
+    }
+    #search-input::placeholder { color: var(--color-text-muted); }
+
+    .header-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    /* EDITAR AQUÍ: Botón del menú de respaldo */
+    .btn-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-full);
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      color: var(--color-text-muted);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+      position: relative;
+    }
+    .btn-icon:hover {
+      background: var(--color-accent-soft);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* Paleta de colores para filtrar — fila debajo del buscador */
+    .color-palette {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-top: var(--space-3);
+    }
+
+    .palette-label {
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    /* EDITAR AQUÍ: Botones de color de la paleta */
+    .color-btn {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-full);
+      border: 2.5px solid transparent;
+      transition: transform .15s, box-shadow .15s, border-color .15s;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .color-btn:hover { transform: scale(1.15); box-shadow: var(--shadow-sm); }
+    .color-btn.active {
+      border-color: var(--color-text);
+      transform: scale(1.18);
+      box-shadow: var(--shadow-md);
+    }
+    .color-btn[data-color="Todos"] {
+      background: conic-gradient(#f9d423, #ff8fab, #6bcb77, #4d9de0, #9b6dff, #f9d423);
+    }
+
+    /* ============================================================
+       CONTENIDO PRINCIPAL
+       ============================================================ */
+    .main-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--space-6) var(--space-6) var(--space-12);
+    }
+
+    /* ============================================================
+       SECCIÓN: TÍTULO DE SECCIÓN
+       ============================================================ */
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: var(--fs-lg);
+      font-weight: 800;
+      color: var(--color-text);
+    }
+
+    .section-count {
+      font-size: var(--fs-sm);
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    /* ============================================================
+       CARRUSEL DE RECIENTES
+       ============================================================ */
+    .carousel-section { margin-bottom: var(--space-10); }
+
+    /* EDITAR AQUÍ: Estilos del carrusel horizontal */
+    .carousel-track {
+      display: flex;
+      gap: var(--space-4);
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: var(--space-4);
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-border) transparent;
+    }
+    .carousel-track::-webkit-scrollbar { height: 5px; }
+    .carousel-track::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+    }
+
+    /* Tarjeta del carrusel */
+    .carousel-card {
+      flex: 0 0 240px;
+      scroll-snap-align: start;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      border: 1.5px solid var(--color-border);
+      position: relative;
+    }
+    .carousel-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .carousel-card-thumb {
+      height: 120px;
+      background: var(--color-surface-alt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Barra de color de estambre al lado izquierdo */
+    .carousel-card-thumb::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 5px;
+      background: var(--yarn-color, var(--color-accent));
+    }
+
+    .carousel-card-body {
+      padding: var(--space-3) var(--space-4);
+    }
+    .carousel-card-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--fs-sm);
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .carousel-card-sub {
+      font-size: var(--fs-xs);
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    .carousel-empty {
+      color: var(--color-text-muted);
+      font-size: var(--fs-sm);
+      font-style: italic;
+      padding: var(--space-4);
+    }
+
+    /* ============================================================
+       CATÁLOGO: GRID DE TARJETAS
+       ============================================================ */
+
+    /* EDITAR AQUÍ: Número de columnas del catálogo principal */
+    /* Cambia las columnas en cada breakpoint según tu preferencia */
+    .catalog-grid {
+      display: grid;
+      gap: var(--space-5);
+      /* Móvil: 1 columna */
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 540px) {
+      /* Tablet pequeña: 2 columnas */
+      .catalog-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 900px) {
+      /* Monitor mediano: 3 columnas */
+      .catalog-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (min-width: 1200px) {
+      /* Monitor grande: 4 columnas */
+      .catalog-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* EDITAR AQUÍ: Estilos de la tarjeta de patrón */
+    .pattern-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1.5px solid var(--color-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform .2s, box-shadow .2s;
+      /* Borde lateral de color del estambre */
+      border-left: 5px solid var(--yarn-color, var(--color-accent));
+    }
+    .pattern-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Contenedor del iframe de YouTube */
+    .card-video {
+      position: relative;
+      padding-top: 56.25%; /* Relación 16:9 */
+      background: #000;
+      overflow: hidden;
+    }
+    .card-video iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+
+    /* Miniatura cuando no hay video */
+    .card-no-video {
+      padding-top: 56.25%;
+      background: var(--color-surface-alt);
+      position: relative;
+      display: flex;
+    }
+    .card-no-video-inner {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      flex-direction: column;
+      gap: var(--space-2);
+      color: var(--color-text-muted);
+    }
+    .card-no-video-inner span {
+      font-size: var(--fs-xs);
+      font-family: var(--font-body);
+    }
+
+    .card-body {
+      padding: var(--space-4);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: var(--fs-md);
+      font-weight: 800;
+      color: var(--color-text);
+      flex: 1;
+      line-height: 1.3;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+    }
+
+    /* Etiquetas de personaje, saga y color */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      font-family: var(--font-display);
+    }
+    .tag-persona {
+      background: var(--color-accent-soft);
+      color: var(--color-accent-dark);
+    }
+    .tag-saga {
+      background: var(--color-surface-alt);
+      color: var(--color-text-muted);
+    }
+    .tag-color {
+      color: #fff;
+      /* El color de fondo se pone dinámicamente con JS */
+    }
+
+    .card-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: auto;
+      padding-top: var(--space-2);
+      border-top: 1px solid var(--color-border);
+    }
+
+    .btn-delete {
+      background: none;
+      color: var(--color-danger);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      transition: background .2s;
+      border: 1px solid transparent;
+    }
+    .btn-delete:hover {
+      background: var(--color-danger-soft);
+      border-color: var(--color-danger);
+    }
+
+    .card-views {
+      font-size: var(--fs-xs);
+      color: var(--color-text-muted);
+      margin-right: auto;
+    }
+
+    /* Estado vacío del catálogo */
+    .catalog-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: var(--space-12) var(--space-4);
+      color: var(--color-text-muted);
+    }
+    .catalog-empty-icon {
+      font-size: 4rem;
+      margin-bottom: var(--space-4);
+      display: block;
+    }
+    .catalog-empty h3 {
+      font-family: var(--font-display);
+      font-size: var(--fs-lg);
+      font-weight: 800;
+      margin-bottom: var(--space-2);
+      color: var(--color-text);
+    }
+
+    /* ============================================================
+       BOTÓN FLOTANTE "+"
+       ============================================================ */
+    /* EDITAR AQUÍ: Posición y apariencia del botón de agregar */
+    .fab {
+      position: fixed;
+      bottom: var(--space-8);
+      right: var(--space-8);
+      width: 60px; height: 60px;
+      border-radius: var(--radius-full);
+      background: var(--color-accent);
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 300;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      transition: background .2s, transform .2s;
+      line-height: 1;
+    }
+    .fab:hover {
+      background: var(--color-accent-dark);
+      transform: scale(1.08) rotate(90deg);
+    }
+    .fab:active { transform: scale(.96) rotate(90deg); }
+
+    /* ============================================================
+       MODAL DEL FORMULARIO
+       ============================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20,10,40,.45);
+      backdrop-filter: blur(6px);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* EDITAR AQUÍ: Estilos del cuadro del formulario modal */
+    .modal-box {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-8);
+      transform: translateY(24px) scale(.97);
+      transition: transform .25s;
+    }
+    .modal-overlay.open .modal-box {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-6);
+    }
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: var(--fs-lg);
+      font-weight: 800;
+      color: var(--color-text);
+    }
+    .modal-close {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-full);
+      background: var(--color-surface-alt);
+      color: var(--color-text-muted);
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s, color .2s;
+      border: none;
+    }
+    .modal-close:hover {
+      background: var(--color-danger-soft);
+      color: var(--color-danger);
+    }
+
+    /* Campos del formulario */
+    .form-group {
+      margin-bottom: var(--space-5);
+    }
+    .form-label {
+      display: block;
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: var(--space-2);
+    }
+    .form-label .req { color: var(--color-accent); margin-left: 2px; }
+
+    /* EDITAR AQUÍ: Estilos de los inputs del formulario */
+    .form-input, .form-select {
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--fs-base);
+      color: var(--color-text);
+      background: var(--color-bg);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-soft);
+    }
+    .form-input::placeholder { color: var(--color-text-muted); }
+
+    .form-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a6e92' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 2.5rem;
+    }
+
+    .form-hint {
+      font-size: var(--fs-xs);
+      color: var(--color-text-muted);
+      margin-top: var(--space-1);
+    }
+
+    /* ============================================================
+       SELECTOR DE COLOR — CHIPS + RUEDA DE COLOR
+       ============================================================ */
+
+    /* Grid de chips de colores disponibles */
+    .color-chips-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+    }
+
+    /* Chip individual de color */
+    .color-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px 5px 6px;
+      border-radius: var(--radius-full);
+      border: 2px solid transparent;
+      background: var(--color-surface-alt);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      font-family: var(--font-display);
+      cursor: pointer;
+      transition: border-color .15s, transform .15s, box-shadow .15s;
+      position: relative;
+    }
+    .color-chip:hover {
+      border-color: var(--color-text-muted);
+      transform: translateY(-1px);
+    }
+    .color-chip.selected {
+      border-color: var(--color-text);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    /* Círculo de color dentro del chip */
+    .chip-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0,0,0,.12);
+      flex-shrink: 0;
+    }
+
+    /* Botón × para eliminar un color personalizado */
+    .chip-remove {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.18);
+      color: #fff;
+      font-size: 9px;
+      display: flex; align-items: center; justify-content: center;
+      margin-left: 2px;
+      flex-shrink: 0;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-weight: 900;
+      transition: background .15s;
+      line-height: 1;
+      padding: 0;
+    }
+    .chip-remove:hover { background: var(--color-danger); }
+
+    /* Botón "Agregar color personalizado" */
+    .btn-add-color {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      border: 1.5px dashed var(--color-accent);
+      background: var(--color-accent-soft);
+      color: var(--color-accent-dark);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      font-family: var(--font-display);
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+      margin-bottom: var(--space-3);
+    }
+    .btn-add-color:hover {
+      background: var(--color-accent);
+      color: #fff;
+      border-color: var(--color-accent-dark);
+    }
+
+    /* Panel inline de rueda de color — oculto por defecto */
+    .custom-color-panel {
+      background: var(--color-surface-alt);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-3);
+      display: none;
+    }
+    .custom-color-panel.open { display: block; }
+
+    /* Fila superior del panel: rueda + campos */
+    .ccp-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-3);
+    }
+
+    /* Wrapper de la rueda nativa — la hacemos grande y bonita */
+    .ccp-wheel-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .ccp-wheel-wrap input[type="color"] {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: 3px solid var(--color-border);
+      padding: 3px;
+      background: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      box-shadow: var(--shadow-sm);
+      transition: border-color .2s;
+    }
+    .ccp-wheel-wrap input[type="color"]::-webkit-color-swatch-wrapper {
+      border-radius: 50%;
+      padding: 0;
+    }
+    .ccp-wheel-wrap input[type="color"]::-webkit-color-swatch {
+      border-radius: 50%;
+      border: none;
+    }
+    .ccp-wheel-wrap input[type="color"]:hover {
+      border-color: var(--color-accent);
+    }
+    .ccp-wheel-label {
+      font-size: var(--fs-xs);
+      color: var(--color-text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Columna derecha: preview grande + hex */
+    .ccp-fields {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      flex: 1;
+    }
+
+    .ccp-preview-big {
+      width: 100%;
+      height: 44px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--color-border);
+      transition: background .15s;
+    }
+
+    .ccp-hex-label {
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+    }
+
+    .ccp-hex-input {
+      width: 100%;
+      padding: var(--space-2) var(--space-3);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: var(--fs-sm);
+      font-family: monospace;
+      color: var(--color-text);
+      background: var(--color-surface);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .ccp-hex-input:focus { border-color: var(--color-accent); }
+
+    /* Fila de nombre + botón guardar */
+    .ccp-name-row {
+      display: flex;
+      gap: var(--space-2);
+      align-items: stretch;
+    }
+    .ccp-name-row .form-input { flex: 1; }
+
+    .btn-save-custom-color {
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-accent);
+      color: #fff;
+      border-radius: var(--radius-md);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      font-family: var(--font-display);
+      white-space: nowrap;
+      transition: background .2s;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .btn-save-custom-color:hover { background: var(--color-accent-dark); }
+
+    /* Fila de color seleccionado actualmente */
+    .selected-color-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-top: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-surface-alt);
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--color-border);
+    }
+
+    .color-preview-swatch {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid rgba(0,0,0,.12);
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+
+    .selected-color-name {
+      font-size: var(--fs-sm);
+      font-weight: 700;
+      font-family: var(--font-display);
+      color: var(--color-text);
+    }
+
+    /* Botones del formulario */
+    .form-actions {
+      display: flex;
+      gap: var(--space-3);
+      margin-top: var(--space-6);
+    }
+
+    /* EDITAR AQUÍ: Botón principal de guardar */
+    .btn-primary {
+      flex: 1;
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-accent);
+      color: #fff;
+      border-radius: var(--radius-full);
+      font-size: var(--fs-base);
+      font-weight: 700;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover { background: var(--color-accent-dark); }
+    .btn-primary:active { transform: scale(.97); }
+
+    .btn-secondary {
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-surface-alt);
+      color: var(--color-text);
+      border-radius: var(--radius-full);
+      font-size: var(--fs-base);
+      font-weight: 600;
+      border: 1.5px solid var(--color-border);
+      transition: background .2s;
+    }
+    .btn-secondary:hover { background: var(--color-border); }
+
+    /* ============================================================
+       MENÚ DE RESPALDO (DROPDOWN)
+       ============================================================ */
+    .backup-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      min-width: 200px;
+      z-index: 150;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: opacity .2s, transform .2s;
+    }
+    .backup-menu.open {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .backup-menu-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding: var(--space-4) var(--space-5);
+      background: none;
+      color: var(--color-text);
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      text-align: left;
+      border-radius: 0;
+      transition: background .15s;
+    }
+    .backup-menu-item:hover { background: var(--color-surface-alt); }
+
+    .backup-menu-divider {
+      height: 1px;
+      background: var(--color-border);
+      margin: 0;
+    }
+
+    /* Texto de la sección de respaldo */
+    .backup-menu-label {
+      padding: var(--space-2) var(--space-5);
+      font-size: var(--fs-xs);
+      color: var(--color-text-muted);
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+
+    /* Input oculto para importar JSON */
+    #import-file-input { display: none; }
+
+    /* ============================================================
+       TOAST / NOTIFICACIÓN
+       ============================================================ */
+    .toast-container {
+      position: fixed;
+      bottom: var(--space-8);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--color-text);
+      color: #fff;
+      padding: var(--space-3) var(--space-6);
+      border-radius: var(--radius-full);
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .3s, transform .3s;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .toast.success { background: #1a7a4a; }
+    .toast.error   { background: var(--color-danger); }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    .footer {
+      text-align: center;
+      padding: var(--space-8) var(--space-4);
+      color: var(--color-text-muted);
+      font-size: var(--fs-xs);
+      border-top: 1px solid var(--color-border);
+      margin-top: var(--space-10);
+    }
+    .footer strong { color: var(--color-accent); }
+
+    /* ============================================================
+       RESPONSIVE — AJUSTES MÓVILES
+       ============================================================ */
+    @media (max-width: 540px) {
+      .header { padding: var(--space-3) var(--space-4); }
+      .header-logo { font-size: var(--fs-lg); }
+      .main-content { padding: var(--space-4) var(--space-4) var(--space-12); }
+      .fab { bottom: var(--space-5); right: var(--space-5); }
+      .modal-box { padding: var(--space-5); }
+      .backup-menu { right: auto; left: 0; }
+    }
+
+    /* ============================================================
+       ACCESIBILIDAD — reducir movimiento si el usuario lo prefiere
+       ============================================================ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
+    }

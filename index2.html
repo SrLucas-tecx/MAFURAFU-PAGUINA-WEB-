@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yarn &amp; Crafts Hub</title>
+
+  <!-- FUENTES: Nunito para títulos (redondeada y artesanal), Inter para cuerpo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Estilos externos — edita styles.css para personalizar colores, fuentes y layout -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+
+  <!-- ============================================================
+       HEADER: Logo + Búsqueda + Paleta de colores
+       ============================================================ -->
+  <header class="header">
+    <div class="header-top">
+      <!-- EDITAR AQUÍ: Cambia el nombre e ícono de la app -->
+      <a class="header-logo" href="#">
+        <span class="header-logo-icon">🧶</span>Yarn<span> &amp; Crafts Hub</span>
+      </a>
+
+      <!-- Barra de búsqueda en tiempo real -->
+      <div class="search-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          type="search"
+          id="search-input"
+          placeholder="Buscar personaje, saga o título…"
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Botón de respaldo (exportar/importar) -->
+      <div class="header-actions">
+        <div style="position:relative">
+          <button class="btn-icon" id="backup-btn" title="Respaldo de datos" aria-haspopup="true">
+            <!-- Ícono de base de datos -->
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14a9 3 0 0018 0V5"/>
+              <path d="M3 12a9 3 0 0018 0"/>
+            </svg>
+          </button>
+
+          <!-- Menú desplegable de respaldo -->
+          <div class="backup-menu" id="backup-menu" role="menu">
+            <div class="backup-menu-label">Respaldo de datos</div>
+            <button class="backup-menu-item" id="export-btn" role="menuitem">
+              <!-- Ícono descarga -->
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Exportar copia (JSON)
+            </button>
+            <div class="backup-menu-divider"></div>
+            <button class="backup-menu-item" id="import-btn" role="menuitem">
+              <!-- Ícono subida -->
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Importar copia (JSON)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDITAR AQUÍ: Paleta de filtros por color de estambre -->
+    <!-- Para agregar un color nuevo: agrega un botón con data-color="NombreColor"
+         y su color CSS en :root como --yarn-NombreColor -->
+    <div class="color-palette" id="color-palette">
+      <span class="palette-label">🎨 Estambre:</span>
+      <!-- El botón "Todos" se agrega con JS, al igual que los botones de color -->
+    </div>
+  </header>
+
+  <!-- ============================================================
+       CONTENIDO PRINCIPAL
+       ============================================================ -->
+  <main class="main-content">
+
+    <!-- SECCIÓN: Últimos añadidos (carrusel horizontal) -->
+    <section class="carousel-section" id="recent-section">
+      <div class="section-header">
+        <h2 class="section-title">✨ Últimos añadidos</h2>
+      </div>
+      <div class="carousel-track" id="carousel-track">
+        <!-- Las tarjetas se insertan con JavaScript -->
+      </div>
+    </section>
+
+    <!-- SECCIÓN: Catálogo completo -->
+    <section class="catalog-section">
+      <div class="section-header">
+        <h2 class="section-title">📂 Mi catálogo</h2>
+        <span class="section-count" id="catalog-count"></span>
+      </div>
+      <div class="catalog-grid" id="catalog-grid">
+        <!-- Las tarjetas se insertan con JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    <strong>Yarn &amp; Crafts Hub</strong> · Todo guardado en tu navegador · Hecho con 🧶 y ❤️
+  </footer>
+
+  <!-- ============================================================
+       BOTÓN FLOTANTE PARA AGREGAR PATRÓN
+       ============================================================ -->
+  <button class="fab" id="fab-btn" title="Agregar nuevo patrón" aria-label="Agregar nuevo patrón">
+    +
+  </button>
+
+  <!-- ============================================================
+       MODAL: FORMULARIO DE NUEVO PATRÓN
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">✍️ Nuevo patrón</h2>
+        <button class="modal-close" id="modal-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <!-- EDITAR AQUÍ: Campos del formulario — puedes agregar más campos si necesitas -->
+      <div class="form-group">
+        <label class="form-label" for="f-titulo">Título del patrón <span class="req">*</span></label>
+        <input class="form-input" type="text" id="f-titulo" placeholder="Ej. Muñeco amigurumi Pikachu" maxlength="80" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="f-personaje">Personaje / Sujeto <span class="req">*</span></label>
+        <input class="form-input" type="text" id="f-personaje" placeholder="Ej. Pikachu, Stitch, Olaf…" maxlength="50" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="f-saga">Saga / Serie / Origen</label>
+        <input class="form-input" type="text" id="f-saga" placeholder="Ej. Pokémon, Disney, Studio Ghibli…" maxlength="50" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="f-color">Color principal del estambre <span class="req">*</span></label>
+        <select class="form-select" id="f-color">
+          <!-- Las opciones se generan con JS a partir de las variables CSS -->
+        </select>
+        <div class="color-preview-row">
+          <div class="color-preview-swatch" id="color-preview-swatch"></div>
+          <span style="font-size:var(--fs-xs);color:var(--color-text-muted)">Vista previa del color</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="f-url">Enlace de YouTube</label>
+        <input class="form-input" type="url" id="f-url" placeholder="https://www.youtube.com/watch?v=…" />
+        <p class="form-hint">Pega cualquier URL de YouTube — se convertirá automáticamente al formato embed.</p>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-secondary" id="form-cancel-btn">Cancelar</button>
+        <button class="btn-primary" id="form-save-btn">Guardar patrón 🧶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input oculto para importar archivos JSON -->
+  <input type="file" id="import-file-input" accept=".json" />
+
+  <!-- Contenedor para notificaciones toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Lógica de la aplicación — edita app.js para cambiar comportamiento -->
+  <script src="app.js"></script>
+</body>
+</html>

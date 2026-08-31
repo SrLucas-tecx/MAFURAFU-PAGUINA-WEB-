@@ -643,7 +643,7 @@
       const isFirstLoad = !localStorage.getItem(STORAGE_KEY + '_visited');
       if (isFirstLoad) {
         localStorage.setItem(STORAGE_KEY + '_visited', '1');
-        setTimeout(() => showToast('¡Bienvenida a Yarn & Crafts Hub! 🧶✨', 'success'), 500);
+        setTimeout(() => showToast('¡Bienvenida a MAFURAFU & Crafts Hub! 🧶✨', 'success'), 500);
       }
     }
 

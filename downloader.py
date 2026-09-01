@@ -4,37 +4,67 @@ MAFURAFU Crafts & Hub — Descargador de Videos
 =============================================
 Requiere: pip install yt-dlp
 Uso: python downloader.py
-Luego abre http://localhost:5050 en tu navegador.
+Servidor local: http://localhost:5050
 
-SOPORTA: YouTube, TikTok, Instagram, Facebook, Twitter/X,
-         Vimeo, Pinterest, Reddit, y +1000 sitios más (yt-dlp).
+Soporta: YouTube, TikTok, Instagram, Facebook, Twitter/X,
+         Vimeo, Pinterest, Reddit y +1000 sitios más.
 """
 
-import os
 import json
+import os
+import re
+import shutil
 import subprocess
 import tempfile
-import threading
-import re
+import sys
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlparse
 
-# ─────────────────────────────────────────────
-# EDITAR AQUÍ: Carpeta donde se guardan los videos descargados
+# Configuración básica
 DOWNLOAD_DIR = Path.home() / "Downloads" / "MAFURAFU_Videos"
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-# EDITAR AQUÍ: Puerto del servidor local
 PORT = 5050
-
-# EDITAR AQUÍ: Formato preferido de descarga
 DEFAULT_FORMAT = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
 
-# ─────────────────────────────────────────────
+
+def find_ffmpeg_path() -> str | None:
+    """Busca automáticamente FFmpeg en el PATH o en las carpetas de WinGet/Sistema."""
+    if shutil.which("ffmpeg"):
+        return None  # Ya está en el PATH global
+
+    local_app_data = os.environ.get("LOCALAPPDATA", "")
+    program_files = os.environ.get("ProgramFiles", "C:\\Program Files")
+
+    search_dirs = [
+        Path(local_app_data) / "Microsoft" / "WinGet" / "Links",
+        Path(local_app_data) / "Microsoft" / "WinGet" / "Packages",
+        Path("C:/ffmpeg/bin"),
+        Path(program_files) / "ffmpeg" / "bin",
+    ]
+
+    for base_dir in search_dirs:
+        if base_dir.exists():
+            ffmpeg_executable = list(base_dir.rglob("ffmpeg.exe"))
+            if ffmpeg_executable:
+                folder = str(ffmpeg_executable[0].parent)
+                os.environ["PATH"] += os.pathsep + folder
+                return folder
+    return None
+
+
+def get_base_cmd() -> list:
+    """Genera los argumentos base ejecutando yt-dlp como módulo de Python."""
+    cmd = [sys.executable, "-m", "yt_dlp", "--js-runtimes", "node"]
+    ffmpeg_dir = find_ffmpeg_path()
+    if ffmpeg_dir:
+        cmd.extend(["--ffmpeg-location", ffmpeg_dir])
+    return cmd
+
 
 def detect_platform(url: str) -> str:
-    """Detecta la plataforma del enlace."""
+    """Detecta la plataforma de origen de la URL."""
     domain = urlparse(url).netloc.lower()
     if "youtube.com" in domain or "youtu.be" in domain:
         return "YouTube"
@@ -52,19 +82,21 @@ def detect_platform(url: str) -> str:
         return "Pinterest"
     elif "reddit.com" in domain:
         return "Reddit"
-    else:
-        return "Otro"
+    return "Otro"
 
 
 def get_info(url: str) -> dict:
-    """Obtiene información del video sin descargarlo."""
+    """Extrae metadatos del video sin descargarlo."""
     try:
+        cmd = get_base_cmd() + ["--dump-json", "--no-playlist", "--", url]
         result = subprocess.run(
-            ["yt-dlp", "--dump-json", "--no-playlist", url],
-            capture_output=True, text=True, timeout=30
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if result.returncode == 0:
-            info = json.loads(result.stdout.split('\n')[0])
+            info = json.loads(result.stdout.split("\n")[0])
             return {
                 "ok": True,
                 "title": info.get("title", "Sin título"),
@@ -75,98 +107,134 @@ def get_info(url: str) -> dict:
                 "description": (info.get("description", "") or "")[:500],
             }
     except Exception as e:
-        pass
+        return {"ok": False, "error": str(e)}
     return {"ok": False, "error": "No se pudo obtener información del video"}
 
 
 def get_transcript(url: str) -> dict:
-    """Intenta obtener la transcripción/subtítulos del video."""
+    """Obtiene la transcripción o subtítulos automáticos del video."""
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
-            result = subprocess.run(
-                [
-                    "yt-dlp",
-                    "--write-auto-sub",
-                    "--sub-lang", "es,en",
-                    "--sub-format", "vtt",
-                    "--skip-download",
-                    "--no-playlist",
-                    "-o", f"{tmpdir}/%(id)s",
-                    url
-                ],
-                capture_output=True, text=True, timeout=60
+            cmd = get_base_cmd() + [
+                "--write-auto-sub",
+                "--sub-lang",
+                "es,en",
+                "--sub-format",
+                "vtt",
+                "--skip-download",
+                "--no-playlist",
+                "-o",
+                f"{tmpdir}/%(id)s",
+                "--",
+                url,
+            ]
+            subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             vtt_files = list(Path(tmpdir).glob("*.vtt"))
             if vtt_files:
                 raw = vtt_files[0].read_text(encoding="utf-8", errors="ignore")
                 lines = []
-                for line in raw.split('\n'):
+                for line in raw.split("\n"):
                     line = line.strip()
-                    if (not line or line.startswith("WEBVTT") or
-                            '-->' in line or line.isdigit() or
-                            re.match(r'^\d{2}:\d{2}', line)):
+                    if (
+                        not line
+                        or line.startswith("WEBVTT")
+                        or "-->" in line
+                        or line.isdigit()
+                        or re.match(r"^\d{2}:\d{2}", line)
+                    ):
                         continue
-                    line = re.sub(r'<[^>]+>', '', line)
+                    line = re.sub(r"<[^>]+>", "", line)
                     if line:
                         lines.append(line)
                 deduped = []
                 for l in lines:
                     if not deduped or deduped[-1] != l:
                         deduped.append(l)
-                transcript = ' '.join(deduped)
-                return {"ok": True, "transcript": transcript, "lang": vtt_files[0].stem.split('.')[-1]}
+                transcript = " ".join(deduped)
+                lang = vtt_files[0].stem.split(".")[-1]
+                return {"ok": True, "transcript": transcript, "lang": lang}
     except Exception as e:
-        pass
-    return {"ok": False, "error": "No hay transcripción disponible para este video"}
+        return {"ok": False, "error": str(e)}
+    return {
+        "ok": False,
+        "error": "No hay transcripción o subtítulos disponibles para este video",
+    }
 
 
 def download_video(url: str, fmt: str = DEFAULT_FORMAT) -> dict:
-    """Descarga el video y retorna la ruta del archivo."""
+    """Descarga el video en la carpeta MAFURAFU_Videos."""
     try:
         platform = detect_platform(url)
-        safe_name = re.sub(r'[^\w\-]', '_', platform)
-        out_template = str(DOWNLOAD_DIR / f"{safe_name}_%(title)s_%(id)s.%(ext)s")
+        safe_name = re.sub(r"[^\w\-]", "_", platform)
+        out_template = str(
+            DOWNLOAD_DIR / f"{safe_name}_%(title)s_%(id)s.%(ext)s"
+        )
+
+        cmd = get_base_cmd() + [
+            "-f",
+            fmt,
+            "--merge-output-format",
+            "mp4",
+            "--no-playlist",
+            "--add-metadata",
+            "-o",
+            out_template,
+            "--",
+            url,
+        ]
 
         result = subprocess.run(
-            [
-                "yt-dlp",
-                "-f", fmt,
-                "--merge-output-format", "mp4",
-                "--no-playlist",
-                "--add-metadata",
-                "-o", out_template,
-                url
-            ],
-            capture_output=True, text=True, timeout=300
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
 
         if result.returncode == 0:
-            files = sorted(DOWNLOAD_DIR.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
+            valid_files = [
+                f
+                for f in DOWNLOAD_DIR.iterdir()
+                if f.is_file() and not f.name.endswith((".part", ".ytdl"))
+            ]
+            files = sorted(
+                valid_files, key=lambda f: f.stat().st_mtime, reverse=True
+            )
             if files:
                 return {
                     "ok": True,
                     "file": str(files[0]),
                     "filename": files[0].name,
-                    "size_mb": round(files[0].stat().st_size / 1024 / 1024, 2),
-                    "platform": platform
+                    "size_mb": round(files[0].stat().st_size / (1024 * 1024), 2),
+                    "platform": platform,
                 }
-        return {"ok": False, "error": result.stderr[-500:] or "Error desconocido"}
+        return {
+            "ok": False,
+            "error": result.stderr[-500:] or "Error desconocido durante la descarga",
+        }
     except FileNotFoundError:
-        return {"ok": False, "error": "yt-dlp no está instalado o no está en el PATH."}
+        return {
+            "ok": False,
+            "error": "yt-dlp no está instalado o no se encuentra en el PATH.",
+        }
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass  # Silenciar logs HTTP
+        pass  # Oculta logs HTTP para mantener limpia la consola
 
     def send_json(self, data: dict, status: int = 200):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Content-Length", len(body))
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
@@ -182,38 +250,45 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query)
         url = unquote(qs.get("url", [""])[0])
 
-        if parsed.path == "/info":
+        if parsed.path == "/ping":
+            self.send_json({"ok": True, "message": "MAFURAFU Downloader activo 🧶"})
+
+        elif parsed.path == "/info":
             if not url:
-                self.send_json({"ok": False, "error": "Falta el parámetro url"}, 400)
+                self.send_json({"ok": False, "error": "Falta el parámetro 'url'"}, 400)
             else:
                 self.send_json(get_info(url))
 
         elif parsed.path == "/transcript":
             if not url:
-                self.send_json({"ok": False, "error": "Falta el parámetro url"}, 400)
+                self.send_json({"ok": False, "error": "Falta el parámetro 'url'"}, 400)
             else:
                 self.send_json(get_transcript(url))
 
         elif parsed.path == "/download":
             if not url:
-                self.send_json({"ok": False, "error": "Falta el parámetro url"}, 400)
+                self.send_json({"ok": False, "error": "Falta el parámetro 'url'"}, 400)
             else:
                 fmt = unquote(qs.get("format", [DEFAULT_FORMAT])[0])
-                result = download_video(url, fmt)
-                self.send_json(result)
-
-        elif parsed.path == "/ping":
-            self.send_json({"ok": True, "message": "MAFURAFU Downloader activo 🧶"})
+                self.send_json(download_video(url, fmt))
 
         elif parsed.path == "/downloads":
             files = []
-            for f in sorted(DOWNLOAD_DIR.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
-                if f.is_file():
-                    files.append({
+            valid_files = [
+                f
+                for f in DOWNLOAD_DIR.iterdir()
+                if f.is_file() and not f.name.endswith((".part", ".ytdl"))
+            ]
+            for f in sorted(
+                valid_files, key=lambda x: x.stat().st_mtime, reverse=True
+            ):
+                files.append(
+                    {
                         "name": f.name,
-                        "size_mb": round(f.stat().st_size / 1024 / 1024, 2),
-                        "path": str(f)
-                    })
+                        "size_mb": round(f.stat().st_size / (1024 * 1024), 2),
+                        "path": str(f),
+                    }
+                )
             self.send_json({"ok": True, "files": files[:50]})
 
         else:
@@ -221,14 +296,14 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def run():
-    print(f"\n🧶 MAFURAFU Downloader iniciado en http://localhost:{PORT}")
-    print(f"📁 Videos se guardan en: {DOWNLOAD_DIR}")
-    print("   Presiona Ctrl+C para detener.\n")
-    server = HTTPServer(("localhost", PORT), Handler)
+    print(f"\n🧶 MAFURAFU Downloader listo en http://localhost:{PORT}")
+    print(f"📁 Guardando videos en: {DOWNLOAD_DIR}")
+    print("   Presiona Ctrl+C para detener el servidor.\n")
+    server = ThreadingHTTPServer(("localhost", PORT), Handler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n👋 Servidor detenido.")
+        print("\n👋 Servidor detenido correctamente.")
 
 
 if __name__ == "__main__":

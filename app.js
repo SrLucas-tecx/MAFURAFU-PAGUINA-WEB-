@@ -755,7 +755,6 @@ function updateFinishResult() {
       ${venta?`<div class="quote-line"><span>Ganancia real</span><span class="price-gain ${gain<0?'negative':''}">${formatMXN(gain)}</span></div>`:''}
     </div>`;
 }
-
 /* ═══════════════════════════════════════════════════════════
    MÓDULO: COTIZACIONES
 ═══════════════════════════════════════════════════════════ */
@@ -1472,17 +1471,120 @@ function init() {
   initFloatPlayer();
   initSidebarMobile();
   navigateTo('tutoriales');
-  // Verificar descargador cada 30s
-  checkDownloader();
-  setInterval(checkDownloader, 30000);
+  
+  // Verificar descargador al iniciar y cada 10s
+  updateDownloaderStatus();
+  setInterval(updateDownloaderStatus, 10000);
+
   // Botón hamburguesa visible en móvil
-  if(window.innerWidth<=768) {
-    const t=document.getElementById('sidebar-toggle');
-    if(t)t.style.display='flex';
+  if(window.innerWidth <= 768) {
+    const t = document.getElementById('sidebar-toggle');
+    if(t) t.style.display = 'flex';
   }
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// Variable global del estado de conexión
+let isDownloaderOnline = false;
+
+// Verificación del servidor local (http://localhost:5050)
+async function updateDownloaderStatus() {
+  const btn = document.getElementById('downloader-status-btn');
+  if (!btn) return;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    const res = await fetch('http://localhost:5050/ping', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    const data = await res.json();
+
+    if (data.ok) {
+      isDownloaderOnline = true;
+      btn.innerHTML = '🟢 Descargador';
+      btn.style.color = 'var(--color-success, #4CAF50)';
+      btn.title = 'Servidor activo (http://localhost:5050)';
+    } else {
+      throw new Error();
+    }
+  } catch (err) {
+    isDownloaderOnline = false;
+    btn.innerHTML = '🔴 Descargador';
+    btn.style.color = 'var(--color-danger, #FF5252)';
+    btn.title = 'Servidor desconectado. Ejecuta: python downloader.py';
+  }
+}
+
+// Evento al hacer clic en el botón del header
+document.getElementById('downloader-status-btn')?.addEventListener('click', async () => {
+  if (!isDownloaderOnline) {
+    alert('⚠️ El servidor de descargas no está activo.\n\nAbre tu terminal en la carpeta del proyecto y ejecuta:\npython downloader.py');
+    return;
+  }
+
+  try {
+    const res = await fetch('http://localhost:5050/downloads');
+    const data = await res.json();
+
+    if (data.ok && data.files.length > 0) {
+      const lista = data.files.slice(0, 10).map(f => `• ${f.name} (${f.size_mb} MB)`).join('\n');
+      alert(`📁 Últimos videos descargados en MAFURAFU_Videos:\n\n${lista}`);
+    } else {
+      alert('🟢 Servidor activo.\nLa carpeta MAFURAFU_Videos aún no tiene descargas.');
+    }
+  } catch (err) {
+    alert('Error al consultar los archivos del servidor local.');
+  }
+});
+
+/* ═══ MÓDULO: YouTube Downloader ═══ */
+document.addEventListener('DOMContentLoaded', () => {
+  const ytBtn = document.getElementById('yt-toggle-btn');
+  const ytModal = document.getElementById('yt-modal');
+  const ytCloseBtn = document.getElementById('yt-close-btn');
+  const ytDownloadBtn = document.getElementById('yt-download-btn');
+  const ytUrlInput = document.getElementById('yt-url-input');
+
+  if (ytBtn && ytModal) {
+    ytBtn.addEventListener('click', () => ytModal.classList.remove('hidden'));
+  }
+
+  if (ytCloseBtn && ytModal) {
+    ytCloseBtn.addEventListener('click', () => ytModal.classList.add('hidden'));
+  }
+
+  if (ytDownloadBtn) {
+    ytDownloadBtn.addEventListener('click', async () => {
+      const url = ytUrlInput ? ytUrlInput.value.trim() : '';
+      if (!url) return alert('Ingresa un enlace de video válido.');
+
+      try {
+        ytDownloadBtn.disabled = true;
+        ytDownloadBtn.textContent = 'Descargando...';
+
+        const targetUrl = `http://localhost:5050/download?url=${encodeURIComponent(url)}`;
+        const response = await fetch(targetUrl);
+        const data = await response.json();
+
+        if (data.ok) {
+          alert(`¡Descarga completada! 🧶\n\nArchivo: ${data.filename}\nTamaño: ${data.size_mb} MB`);
+          if (ytModal) ytModal.classList.add('hidden');
+          if (ytUrlInput) ytUrlInput.value = '';
+        } else {
+          alert(`Error al descargar: ${data.error}`);
+        }
+      } catch (error) {
+        alert('No se pudo conectar con el servidor Python.\nAsegúrate de ejecutar "python downloader.py" en la terminal.');
+      } finally {
+        ytDownloadBtn.disabled = false;
+        ytDownloadBtn.textContent = 'Descargar';
+      }
+    });
+  }
+});
 
 /* ═══════════════════════════════════════════════════════════
    *** AGREGA AQUÍ NUEVOS MÓDULOS ***

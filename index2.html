@@ -61,8 +61,14 @@
           💾 Respaldo
         </button>
         <div class="backup-menu" id="backup-menu">
-          <div class="backup-menu-label">Exportar / Importar</div>
-          <button class="backup-menu-item" id="export-btn">📦 Exportar todo (JSON)</button>
+          <div class="backup-menu-label">Exportar completo</div>
+          <button class="backup-menu-item" id="export-btn">📦 Todo (JSON completo)</button>
+          <div class="backup-menu-divider"></div>
+          <div class="backup-menu-label">Exportar sección</div>
+          <button class="backup-menu-item" data-export-section="patterns">🎬 Solo tutoriales</button>
+          <button class="backup-menu-item" data-export-section="projects">🧶 Solo proyectos</button>
+          <button class="backup-menu-item" data-export-section="yarns">🎨 Solo estambres</button>
+          <button class="backup-menu-item" data-export-section="clients">👥 Solo clientes</button>
           <div class="backup-menu-divider"></div>
           <button class="backup-menu-item" id="import-btn">📂 Importar JSON</button>
         </div>
@@ -427,15 +433,31 @@
       </div>
       <div id="tut-download-result" style="margin-top:var(--space-2);font-size:var(--fs-xs);color:var(--color-text-muted)"></div>
     </div>
-    <!-- ETIQUETAS -->
+    <!-- ETIQUETAS (generadas dinámicamente por JS) -->
     <div class="form-group">
       <label class="form-label">Etiquetas</label>
-      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2)" id="tut-tag-selector">
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="pedido" style="display:none"> 📦 Pedido</label>
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="regalo" style="display:none"> 🎁 Regalo</label>
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="bolsa" style="display:none"> 🛍️ Bolsa</label>
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="urgente" style="display:none"> 🔥 Urgente</label>
-      </div>
+      <!-- JS construye los chips aquí con buildTagChips('tut-tag-selector') -->
+      <div class="color-chips-grid" id="tut-tag-selector" style="margin-bottom:var(--space-2)"></div>
+
+      <!-- Crear nueva etiqueta personalizada -->
+      <details style="margin-top:var(--space-2)">
+        <summary style="font-size:var(--fs-xs);font-weight:700;color:var(--color-accent);cursor:pointer;user-select:none">
+          ＋ Crear etiqueta nueva
+        </summary>
+        <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2);flex-wrap:wrap">
+          <select class="form-select" id="tag-emoji-select" style="width:auto;padding:var(--space-2);font-size:1.1rem;flex-shrink:0">
+            <option>🏷️</option><option>🌸</option><option>🧶</option><option>✨</option>
+            <option>🧸</option><option>🎄</option><option>🎀</option><option>💖</option>
+            <option>⭐</option><option>🐰</option><option>🎃</option><option>🛍️</option>
+            <option>📦</option><option>🎁</option><option>🔥</option><option>👾</option>
+            <option>🎶</option><option>👽</option><option>⚠️</option><option>🍀</option>
+            <option>🦋</option><option>🌙</option><option>🎯</option><option>💫</option>
+          </select>
+          <input class="form-input" type="text" id="add-tag-input" placeholder="Nombre de etiqueta…" maxlength="20" style="flex:1;min-width:120px"/>
+          <button type="button" class="btn-primary" id="add-tag-btn" style="white-space:nowrap;padding:var(--space-2) var(--space-4);font-size:var(--fs-xs)">Guardar</button>
+        </div>
+        <p class="form-hint">La etiqueta se guardará y podrás usarla en todos los tutoriales y proyectos.</p>
+      </details>
     </div>
     <div class="form-actions">
       <button class="btn-secondary" data-modal="modal-tutorial">Cancelar</button>
@@ -520,15 +542,10 @@
       <label class="form-label">Notas / descripción</label>
       <textarea class="form-textarea" id="p-notas" placeholder="Descripción, especificaciones, etc."></textarea>
     </div>
-    <!-- Etiquetas -->
+    <!-- Etiquetas (generadas dinámicamente por JS) -->
     <div class="form-group">
       <label class="form-label">Etiquetas</label>
-      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2)" id="proj-tag-selector">
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="pedido" style="display:none"> 📦 Pedido</label>
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="regalo" style="display:none"> 🎁 Regalo</label>
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="bolsa" style="display:none"> 🛍️ Bolsa</label>
-        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="urgente" style="display:none"> 🔥 Urgente</label>
-      </div>
+      <div class="color-chips-grid" id="proj-tag-selector"></div>
     </div>
     <div class="form-actions">
       <button class="btn-secondary" data-modal="modal-proyecto">Cancelar</button>

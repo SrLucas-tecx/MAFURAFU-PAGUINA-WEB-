@@ -951,7 +951,7 @@ a { color: inherit; text-decoration: none; }
   position: fixed;
   bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(1050%);
   background-color: #ff0000;
   color: #ffffff;
   border: none;
@@ -1001,3 +1001,59 @@ a { color: inherit; text-decoration: none; }
   justify-content: flex-end;
   gap: 10px;
 }
+/* ═══ MÓDULO: TARJETAS FIJADAS (PIN) ═══════════════════════
+   Estilos para tarjetas de tutorial y proyecto marcadas como
+   fijadas (pinned). El badge aparece en la esquina superior.
+══════════════════════════════════════════════════════════ */
+.pin-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  z-index: 5;
+  letter-spacing: .03em;
+  box-shadow: 0 2px 6px rgba(0,0,0,.18);
+  pointer-events: none;
+}
+
+/* La tarjeta fijada necesita position:relative para el badge */
+.pattern-card.pinned,
+.project-card.pinned {
+  position: relative;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft), var(--shadow-md);
+}
+
+/* ═══ MÓDULO: ETIQUETAS — clase selected (toggle visual) ═══
+   El CSS del tag-chip usa .selected para indicar que está
+   activo. Se distingue con fondo de acento y texto blanco.
+══════════════════════════════════════════════════════════ */
+.color-chip.selected,
+.tag-chip.selected {
+  background: var(--color-accent) !important;
+  color: #fff !important;
+  border-color: var(--color-accent-dark) !important;
+}
+
+/* Asegurar que el details/summary del form de etiqueta se vea bien */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker { display: none; }
+details[open] > summary { margin-bottom: var(--space-2); }
+
+/* ═══ RESPONSIVE: quote-layout en móvil ══════════════════ */
+@media (max-width: 720px) {
+  #quote-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ═══ MÓDULO: Backup menu — ancho extendido para opciones ═ */
+.backup-menu { min-width: 230px; }

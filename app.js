@@ -1585,6 +1585,80 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+// Array que recupera las etiquetas personalizadas guardadas o crea uno vacío
+let customTags = JSON.parse(localStorage.getItem('mafurafu_custom_tags')) || [];
+
+// Renderiza una etiqueta en la interfaz y en el filtro
+function renderTagElement(tagObj) {
+  const tagSelector = document.getElementById('tut-tag-selector');
+  const filterSelect = document.getElementById('filter-tags-tut');
+  if (!tagSelector) return;
+
+  // Evita duplicar si ya existe en la vista
+  if (tagSelector.querySelector(`input[value="${tagObj.id}"]`)) return;
+
+  const label = document.createElement('label');
+  label.className = 'color-chip';
+  label.style.cursor = 'pointer';
+  label.innerHTML = `<input type="checkbox" value="${tagObj.id}" style="display:none"> ${tagObj.emoji} ${tagObj.name}`;
+
+  label.addEventListener('click', () => {
+    const chk = label.querySelector('input');
+    chk.checked = !chk.checked;
+    label.classList.toggle('active', chk.checked);
+  });
+
+  tagSelector.appendChild(label);
+
+  // Añade la opción al menú de filtro principal
+  if (filterSelect && !filterSelect.querySelector(`option[value="${tagObj.id}"]`)) {
+    const opt = document.createElement('option');
+    opt.value = tagObj.id;
+    opt.textContent = `${tagObj.emoji} ${tagObj.name}`;
+    filterSelect.appendChild(opt);
+  }
+}
+
+// Carga las etiquetas almacenadas al abrir la app
+function loadStoredCustomTags() {
+  customTags.forEach(tag => renderTagElement(tag));
+}
+
+// Evento para agregar y persistir una nueva etiqueta
+document.getElementById('add-tag-btn')?.addEventListener('click', () => {
+  const tagInput = document.getElementById('add-tag-input');
+  const emojiSelect = document.getElementById('tag-emoji-select');
+  
+  const name = tagInput.value.trim();
+  const emoji = emojiSelect.value;
+
+  if (!name) return;
+
+  const tagId = name.toLowerCase().replace(/\s+/g, '_');
+  const newTag = { id: tagId, name: name, emoji: emoji };
+
+  // Guarda en localStorage si no está repetida
+  if (!customTags.some(t => t.id === tagId)) {
+    customTags.push(newTag);
+    localStorage.setItem('mafurafu_custom_tags', JSON.stringify(customTags));
+  }
+
+  renderTagElement(newTag);
+
+  // Selecciona automáticamente la etiqueta recién creada
+  const tagSelector = document.getElementById('tut-tag-selector');
+  const createdLabel = tagSelector.querySelector(`input[value="${tagId}"]`)?.parentElement;
+  if (createdLabel) {
+    const chk = createdLabel.querySelector('input');
+    chk.checked = true;
+    createdLabel.classList.add('active');
+  }
+
+  tagInput.value = '';
+});
+
+// Inicializar la carga al renderizar el documento
+document.addEventListener('DOMContentLoaded', loadStoredCustomTags);
 
 /* ═══════════════════════════════════════════════════════════
    *** AGREGA AQUÍ NUEVOS MÓDULOS ***

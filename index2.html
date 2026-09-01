@@ -1,191 +1,622 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MAFURAFU &amp; Crafts Hub</title>
-
-  <!-- FUENTES: Nunito para títulos (redondeada y artesanal), Inter para cuerpo -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-
-  <!-- Estilos externos — edita styles.css para personalizar colores, fuentes y layout -->
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MAFURAFU CRAFTS & HUB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <!-- FUENTES CARGADAS: Nunito · Inter · Pacifico · Playfair Display · Quicksand -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&family=Pacifico&family=Playfair+Display:wght@700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-
-
-  <!-- ============================================================
-       HEADER: Logo + Búsqueda + Paleta de colores
-       ============================================================ -->
-  <header class="header">
-    <div class="header-top">
-      <!-- EDITAR AQUÍ: Cambia el nombre e ícono de la app -->
-      <a class="header-logo" href="#">
-        <span class="header-logo-icon">🧶</span>MAFURAFU<span> &amp; Crafts Hub</span>
-      </a>
-
-      <!-- Barra de búsqueda en tiempo real -->
-      <div class="search-wrap">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          type="search"
-          id="search-input"
-          placeholder="Buscar personaje, saga o título…"
-          autocomplete="off"
-        />
+<div class="app-layout">
+  <!-- ═══════════════════════════════════════════
+       SIDEBAR DE NAVEGACIÓN
+  ═══════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🧶</span>
+      <div>MAFURAFU<br><small style="font-size:.6rem;opacity:.7;font-weight:600">CRAFTS & HUB</small></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Principal</div>
+      <button class="nav-item active" data-page="tutoriales">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m8 21 4-4 4 4"/></svg>
+        Tutoriales
+      </button>
+      <button class="nav-item" data-page="proyectos">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Proyectos
+      </button>
+      <button class="nav-item" data-page="cotizaciones">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Cotizaciones
+      </button>
+      <div class="nav-group-label" style="margin-top:var(--space-3)">Inventario</div>
+      <button class="nav-item" data-page="estambres">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        Estambres
+      </button>
+      <div class="nav-group-label" style="margin-top:var(--space-3)">Negocio</div>
+      <button class="nav-item" data-page="clientes">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes
+      </button>
+      <div class="nav-group-label" style="margin-top:var(--space-3)">Ajustes</div>
+      <button class="nav-item" data-page="personalizar">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.19 14.69l-3.11-3.11a5 5 0 0 0-7.07-7.07L7 6.41a10 10 0 0 1 12.07-1.48z"/></svg>
+        Personalizar
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <!-- Modo oscuro -->
+      <button class="btn-icon" id="dark-mode-btn" title="Modo oscuro" style="width:100%;border-radius:var(--radius-md);gap:var(--space-2);font-size:var(--fs-xs);font-weight:700;font-family:var(--font-display);justify-content:flex-start;padding:0 var(--space-3);">
+        🌙 Modo oscuro
+      </button>
+      <!-- Respaldo -->
+      <div style="position:relative">
+        <button class="btn-icon" id="backup-btn" style="width:100%;border-radius:var(--radius-md);gap:var(--space-2);font-size:var(--fs-xs);font-weight:700;font-family:var(--font-display);justify-content:flex-start;padding:0 var(--space-3);">
+          💾 Respaldo
+        </button>
+        <div class="backup-menu" id="backup-menu">
+          <div class="backup-menu-label">Exportar / Importar</div>
+          <button class="backup-menu-item" id="export-btn">📦 Exportar todo (JSON)</button>
+          <div class="backup-menu-divider"></div>
+          <button class="backup-menu-item" id="import-btn">📂 Importar JSON</button>
+        </div>
       </div>
+      <!-- Reproductor flotante -->
+      <button class="btn-icon" id="open-player-btn" style="width:100%;border-radius:var(--radius-md);gap:var(--space-2);font-size:var(--fs-xs);font-weight:700;font-family:var(--font-display);justify-content:flex-start;padding:0 var(--space-3);">
+        ▶️ Reproductor
+      </button>
+    </div>
+  </aside>
 
-      <!-- Botón de respaldo (exportar/importar) -->
-      <div class="header-actions">
-        <div style="position:relative">
-          <button class="btn-icon" id="backup-btn" title="Respaldo de datos" aria-haspopup="true">
-            <!-- Ícono de base de datos -->
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <ellipse cx="12" cy="5" rx="9" ry="3"/>
-              <path d="M3 5v14a9 3 0 0018 0V5"/>
-              <path d="M3 12a9 3 0 0018 0"/>
-            </svg>
+  <!-- Overlay para cerrar sidebar en móvil -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- ═══════════════════════════════════════════
+       ÁREA PRINCIPAL
+  ═══════════════════════════════════════════ -->
+  <div class="main-area">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-top">
+        <!-- Botón hamburguesa (móvil) -->
+        <button class="btn-icon" id="sidebar-toggle" title="Menú" style="display:none">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="header-page-title" id="header-page-title">Tutoriales</span>
+        <div class="search-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="search" id="search-input" class="search-input" placeholder="Buscar…" autocomplete="off"/>
+        </div>
+        <div class="header-actions">
+          <button class="btn-icon" id="downloader-status-btn" title="Estado del descargador" style="font-size:.7rem;font-weight:700;gap:4px;width:auto;padding:0 10px;">
+            🔴 Descargador
           </button>
+        </div>
+      </div>
+      <!-- Paleta de colores (solo en tutoriales y proyectos) -->
+      <div class="color-palette" id="color-palette" style="display:none">
+        <span class="palette-label">🎨 Estambre:</span>
+      </div>
+    </header>
 
-          <!-- Menú desplegable de respaldo -->
-          <div class="backup-menu" id="backup-menu" role="menu">
-            <div class="backup-menu-label">Respaldo de datos</div>
-            <button class="backup-menu-item" id="export-btn" role="menuitem">
-              <!-- Ícono descarga -->
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Exportar copia (JSON)
-            </button>
-            <div class="backup-menu-divider"></div>
-            <button class="backup-menu-item" id="import-btn" role="menuitem">
-              <!-- Ícono subida -->
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Importar copia (JSON)
-            </button>
+    <!-- CONTENIDO DE PÁGINAS -->
+    <main class="page-content">
+      <!-- ═══ PÁGINA: TUTORIALES ═══ -->
+      <section class="page-section active" id="page-tutoriales">
+        <div class="section-header">
+          <h2 class="section-title">✨ Últimos añadidos</h2>
+        </div>
+        <div class="carousel-track" id="carousel-track"></div>
+        <div class="section-header" style="margin-top:var(--space-8)">
+          <h2 class="section-title">📂 Mi catálogo</h2>
+          <span class="section-count" id="catalog-count"></span>
+          <div class="section-actions">
+            <select class="form-select" id="filter-tags-tut" style="width:auto;padding:var(--space-2) var(--space-8) var(--space-2) var(--space-3);font-size:var(--fs-xs)">
+              <option value="">Todas las etiquetas</option>
+              <option value="pedido">Pedido</option>
+              <option value="regalo">Regalo</option>
+              <option value="bolsa">Bolsa</option>
+              <option value="urgente">Urgente</option>
+            </select>
           </div>
         </div>
+        <div class="cards-grid" id="catalog-grid"></div>
+      </section>
+
+      <!-- ═══ PÁGINA: PROYECTOS ═══ -->
+      <section class="page-section" id="page-proyectos">
+        <div class="section-header">
+          <h2 class="section-title">🧶 Proyectos</h2>
+          <span class="section-count" id="projects-count"></span>
+          <div class="section-actions">
+            <select class="form-select" id="filter-status-proj" style="width:auto;padding:var(--space-2) var(--space-8) var(--space-2) var(--space-3);font-size:var(--fs-xs)">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="progreso">En progreso</option>
+              <option value="terminado">Terminado</option>
+              <option value="entregado">Entregado</option>
+            </select>
+            <select class="form-select" id="filter-tags-proj" style="width:auto;padding:var(--space-2) var(--space-8) var(--space-2) var(--space-3);font-size:var(--fs-xs)">
+              <option value="">Todas las etiquetas</option>
+              <option value="pedido">Pedido</option>
+              <option value="regalo">Regalo</option>
+              <option value="bolsa">Bolsa</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+        </div>
+        <div class="cards-grid" id="projects-grid"></div>
+      </section>
+
+      <!-- ═══ PÁGINA: COTIZACIONES ═══ -->
+      <section class="page-section" id="page-cotizaciones">
+        <div class="section-header">
+          <h2 class="section-title">💲 Cotizador de precios</h2>
+        </div>
+        <div style="display:grid;gap:var(--space-6);grid-template-columns:1fr 1fr;max-width:900px" id="quote-layout">
+          <!-- Formulario -->
+          <div class="quote-card">
+            <h3 style="font-family:var(--font-display);font-weight:800;font-size:var(--fs-md)">Datos del proyecto</h3>
+            <div class="form-group" style="margin-bottom:var(--space-4)">
+              <label class="form-label">Costo del material (MXN)</label>
+              <input class="form-input" type="number" id="q-material" placeholder="0.00" min="0" step="0.01"/>
+            </div>
+            <div class="form-group" style="margin-bottom:var(--space-4)">
+              <label class="form-label">Horas trabajadas</label>
+              <input class="form-input" type="number" id="q-hours" placeholder="0" min="0" step="0.5"/>
+            </div>
+            <div class="form-group" style="margin-bottom:var(--space-4)">
+              <label class="form-label">
+                Costo por hora (MXN)
+                <button type="button" id="edit-hour-rate-btn" style="font-size:var(--fs-xs);color:var(--color-accent);background:none;border:none;cursor:pointer;padding:0 4px;font-weight:600;">✏️ editar</button>
+              </label>
+              <div style="display:flex;align-items:center;gap:var(--space-2)">
+                <input class="form-input" type="number" id="q-hour-rate" placeholder="200.00" min="0" step="1" style="max-width:140px"/>
+                <span style="font-size:var(--fs-xs);color:var(--color-text-muted)">$/hr · Base México 2026</span>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:var(--space-2)">
+              <label class="form-label">Nivel de detalle</label>
+              <div class="quote-detail-selector" id="detail-selector">
+                <button class="detail-btn" data-pct="20">Sin detalles<br><small>+20%</small></button>
+                <button class="detail-btn" data-pct="25">Poco detalle<br><small>+25%</small></button>
+                <button class="detail-btn selected" data-pct="30">Det. moderados<br><small>+30%</small></button>
+                <button class="detail-btn" data-pct="35">Mucho detalle<br><small>+35%</small></button>
+                <button class="detail-btn" data-pct="40">Demasiados det.<br><small>+40%</small></button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:var(--space-2)">
+              <label class="form-label">Precio de venta real (si ya tiene uno)</label>
+              <input class="form-input" type="number" id="q-real-price" placeholder="Opcional" min="0" step="1"/>
+            </div>
+            <button class="btn-primary" id="calc-quote-btn" style="width:100%">Calcular precio 💲</button>
+          </div>
+          <!-- Resultado -->
+          <div class="quote-result-box" id="quote-result-box" style="align-self:start">
+            <div class="quote-result-title">PRECIO SUGERIDO DE VENTA</div>
+            <div class="quote-result-price" id="quote-price">$0.00</div>
+            <div class="quote-breakdown" id="quote-breakdown">
+              <div class="quote-line"><span>Costo material</span><span id="ql-material">$0</span></div>
+              <div class="quote-line"><span>Mano de obra</span><span id="ql-labor">$0</span></div>
+              <div class="quote-line"><span>% detalle</span><span id="ql-pct">30%</span></div>
+              <div class="quote-line total"><span>Precio sugerido</span><span id="ql-total">$0</span></div>
+              <div class="quote-line" id="ql-gain-row" style="display:none"><span>Ganancia estimada</span><span id="ql-gain" class="price-gain">$0</span></div>
+            </div>
+            <button class="btn-primary" id="save-quote-btn" style="width:100%;margin-top:var(--space-4)">Guardar cotización</button>
+          </div>
+        </div>
+        <!-- Lista de cotizaciones guardadas -->
+        <div style="margin-top:var(--space-8)">
+          <div class="section-header"><h2 class="section-title">📋 Cotizaciones guardadas</h2></div>
+          <div class="cards-grid" id="quotes-grid"></div>
+        </div>
+      </section>
+
+      <!-- ═══ PÁGINA: ESTAMBRES ═══ -->
+      <section class="page-section" id="page-estambres">
+        <div class="section-header">
+          <h2 class="section-title">🧶 Inventario de estambre</h2>
+          <span class="section-count" id="yarn-count"></span>
+        </div>
+        <div class="yarn-inventory-grid" id="yarn-inventory-grid"></div>
+      </section>
+
+      <!-- ═══ PÁGINA: CLIENTES ═══ -->
+      <section class="page-section" id="page-clientes">
+        <div class="section-header">
+          <h2 class="section-title">👥 Clientes</h2>
+          <span class="section-count" id="clients-count"></span>
+        </div>
+        <div class="cards-grid" style="grid-template-columns:1fr" id="clients-grid"></div>
+      </section>
+
+      <!-- ═══ PÁGINA: PERSONALIZAR ═══ -->
+      <section class="page-section" id="page-personalizar">
+        <div class="section-header"><h2 class="section-title">🎨 Personalizar interfaz</h2></div>
+        <div class="customize-section">
+          <!-- Fondo -->
+          <div class="customize-card">
+            <h3>🖼️ Color de fondo</h3>
+            <div style="display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap">
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-xs)">
+                <input type="color" id="bg-color-picker" value="#f5f0fb" style="width:52px;height:52px;border-radius:50%;border:3px solid var(--color-border);cursor:pointer;appearance:none;-webkit-appearance:none;padding:3px"/>
+                Color fondo
+              </label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:var(--fs-xs)">
+                <input type="color" id="accent-color-picker" value="#9b6dff" style="width:52px;height:52px;border-radius:50%;border:3px solid var(--color-border);cursor:pointer;appearance:none;-webkit-appearance:none;padding:3px"/>
+                Color acento
+              </label>
+              <div>
+                <div style="font-size:var(--fs-sm);font-weight:600;margin-bottom:var(--space-2)">Temas predefinidos</div>
+                <div class="color-theme-row" id="color-themes-row"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Tipografía -->
+          <div class="customize-card">
+            <h3>✍️ Tipografía</h3>
+            <div style="margin-bottom:var(--space-3)">
+              <div style="font-size:var(--fs-sm);font-weight:600;margin-bottom:var(--space-2)">Fuente de títulos (display)</div>
+              <div class="font-preview-row" id="font-display-options"></div>
+            </div>
+            <div>
+              <div style="font-size:var(--fs-sm);font-weight:600;margin-bottom:var(--space-2)">Fuente de texto (body)</div>
+              <div class="font-preview-row" id="font-body-options"></div>
+            </div>
+            <div style="margin-top:var(--space-4)">
+              <label class="form-label">Agregar fuente desde Google Fonts (nombre exacto)</label>
+              <div style="display:flex;gap:var(--space-2)">
+                <input class="form-input" type="text" id="custom-font-input" placeholder="Ej: Caveat, Lobster, Lato…" style="flex:1"/>
+                <select class="form-select" id="custom-font-target" style="width:auto;padding:var(--space-3) var(--space-8) var(--space-3) var(--space-3)">
+                  <option value="display">Títulos</option>
+                  <option value="body">Texto</option>
+                </select>
+                <button class="btn-primary" id="load-custom-font-btn" style="white-space:nowrap">Cargar</button>
+              </div>
+              <p class="form-hint">Escribe el nombre de cualquier fuente de <a href="https://fonts.google.com" target="_blank" style="color:var(--color-accent)">Google Fonts</a></p>
+            </div>
+          </div>
+          <!-- Costo por hora -->
+          <div class="customize-card">
+            <h3>⏱️ Tarifa por hora (México)</h3>
+            <div class="hour-rate-row">
+              <label>Costo hora de trabajo:</label>
+              <input class="form-input" type="number" id="global-hour-rate" placeholder="200" min="1" step="1"/>
+              <span style="font-size:var(--fs-sm);color:var(--color-text-muted)">MXN / hora</span>
+              <button class="btn-primary" id="save-hour-rate-btn">Guardar</button>
+            </div>
+            <p class="form-hint" style="margin-top:var(--space-2)">Esta tarifa se usa como base en el cotizador. Actualiza según el salario vigente.</p>
+          </div>
+        </div>
+      </section>
+    </main><!-- /page-content -->
+
+    <footer class="footer">
+      <strong>MAFURAFU CRAFTS & HUB</strong> · Todo guardado en tu navegador · Hecho con 🧶 y ❤️
+    </footer>
+  </div><!-- /main-area -->
+</div><!-- /app-layout -->
+
+<!-- FAB contextual -->
+<button class="fab" id="fab-btn" title="Agregar nuevo" aria-label="Agregar">+</button>
+
+<!-- ═══════════════════════════════════════════
+     REPRODUCTOR FLOTANTE ARRASTRABLE
+═══════════════════════════════════════════ -->
+<div class="float-player" id="float-player">
+  <div class="float-player-header" id="float-player-handle">
+    <span>▶️</span>
+    <span class="float-player-title" id="float-player-title">Reproductor</span>
+    <button class="float-player-close" id="float-player-close">✕</button>
+  </div>
+  <div class="float-player-body">
+    <div class="player-placeholder" id="player-placeholder">
+      <span>▶️</span><span>Elige un video para reproducir</span>
+    </div>
+    <iframe id="float-player-iframe" src="" title="Reproductor" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen style="display:none"></iframe>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close">✕</button>
+  <img id="lightbox-img" src="" alt=""/>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODALES
+═══════════════════════════════════════════ -->
+
+<!-- MODAL: NUEVO TUTORIAL -->
+<div class="modal-overlay" id="modal-tutorial">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">✍️ Nuevo tutorial</h2>
+      <button class="modal-close" data-modal="modal-tutorial">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Título <span class="req">*</span></label>
+      <input class="form-input" type="text" id="t-titulo" placeholder="Ej. Amigurumi Pikachu" maxlength="80"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Personaje <span class="req">*</span></label>
+        <input class="form-input" type="text" id="t-personaje" placeholder="Ej. Pikachu" maxlength="50"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Saga / Serie</label>
+        <input class="form-input" type="text" id="t-saga" placeholder="Ej. Pokémon" maxlength="50"/>
       </div>
     </div>
-
-    <!-- EDITAR AQUÍ: Paleta de filtros por color de estambre -->
-    <!-- Para agregar un color nuevo: agrega un botón con data-color="NombreColor"
-         y su color CSS en :root como --yarn-NombreColor -->
-    <div class="color-palette" id="color-palette">
-      <span class="palette-label">🎨 Estambre:</span>
-      <!-- El botón "Todos" se agrega con JS, al igual que los botones de color -->
-    </div>
-  </header>
-
-  <!-- ============================================================
-       CONTENIDO PRINCIPAL
-       ============================================================ -->
-  <main class="main-content">
-
-    <!-- SECCIÓN: Últimos añadidos (carrusel horizontal) -->
-    <section class="carousel-section" id="recent-section">
-      <div class="section-header">
-        <h2 class="section-title">✨ Últimos añadidos</h2>
-      </div>
-      <div class="carousel-track" id="carousel-track">
-        <!-- Las tarjetas se insertan con JavaScript -->
-      </div>
-    </section>
-
-    <!-- SECCIÓN: Catálogo completo -->
-    <section class="catalog-section">
-      <div class="section-header">
-        <h2 class="section-title">📂 Mi catálogo</h2>
-        <span class="section-count" id="catalog-count"></span>
-      </div>
-      <div class="catalog-grid" id="catalog-grid">
-        <!-- Las tarjetas se insertan con JavaScript -->
-      </div>
-    </section>
-
-  </main>
-
-  <!-- ============================================================
-       FOOTER
-       ============================================================ -->
-  <footer class="footer">
-    <strong>MAFURAFU &amp; Crafts Hub</strong> · Todo guardado en tu navegador · Hecho con 🧶 y ❤️
-  </footer>
-
-  <!-- ============================================================
-       BOTÓN FLOTANTE PARA AGREGAR PATRÓN
-       ============================================================ -->
-  <button class="fab" id="fab-btn" title="Agregar nuevo patrón" aria-label="Agregar nuevo patrón">
-    +
-  </button>
-
-  <!-- ============================================================
-       MODAL: FORMULARIO DE NUEVO PATRÓN
-       ============================================================ -->
-  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2 class="modal-title" id="modal-title">✍️ Nuevo patrón</h2>
-        <button class="modal-close" id="modal-close" aria-label="Cerrar">✕</button>
-      </div>
-
-      <!-- EDITAR AQUÍ: Campos del formulario — puedes agregar más campos si necesitas -->
-      <div class="form-group">
-        <label class="form-label" for="f-titulo">Título del patrón <span class="req">*</span></label>
-        <input class="form-input" type="text" id="f-titulo" placeholder="Ej. Muñeco amigurumi Pikachu" maxlength="80" />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="f-personaje">Personaje / Sujeto <span class="req">*</span></label>
-        <input class="form-input" type="text" id="f-personaje" placeholder="Ej. Pikachu, Stitch, Olaf…" maxlength="50" />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="f-saga">Saga / Serie / Origen</label>
-        <input class="form-input" type="text" id="f-saga" placeholder="Ej. Pokémon, Disney, Studio Ghibli…" maxlength="50" />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="f-color">Color principal del estambre <span class="req">*</span></label>
-        <select class="form-select" id="f-color">
-          <!-- Las opciones se generan con JS a partir de las variables CSS -->
-        </select>
-        <div class="color-preview-row">
-          <div class="color-preview-swatch" id="color-preview-swatch"></div>
-          <span style="font-size:var(--fs-xs);color:var(--color-text-muted)">Vista previa del color</span>
+    <!-- COLOR -->
+    <div class="form-group">
+      <label class="form-label">Color de estambre <span class="req">*</span></label>
+      <div class="color-chips-grid" id="tut-color-chips"></div>
+      <button type="button" class="btn-add-color" id="tut-btn-add-color">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar color personalizado
+      </button>
+      <div class="custom-color-panel" id="tut-color-panel">
+        <div class="ccp-row">
+          <label class="ccp-wheel-wrap">
+            <input type="color" id="tut-cpicker" value="#ff69b4"/>
+            <span class="ccp-wheel-label">🎨 Rueda</span>
+          </label>
+          <div class="ccp-fields">
+            <div class="ccp-preview-big" id="tut-cpreview"></div>
+            <div class="ccp-hex-label">Hex</div>
+            <input class="ccp-hex-input" type="text" id="tut-chex" placeholder="#ff69b4" maxlength="7"/>
+          </div>
+        </div>
+        <div class="ccp-name-row">
+          <input class="form-input" type="text" id="tut-cname" placeholder="Nombre del color" maxlength="30"/>
+          <button type="button" class="btn-save-custom-color" id="tut-csave">Guardar y usar</button>
         </div>
       </div>
-
-      <div class="form-group">
-        <label class="form-label" for="f-url">Enlace de YouTube</label>
-        <input class="form-input" type="url" id="f-url" placeholder="https://www.youtube.com/watch?v=…" />
-        <p class="form-hint">Pega cualquier URL de YouTube — se convertirá automáticamente al formato embed.</p>
-      </div>
-
-      <div class="form-actions">
-        <button class="btn-secondary" id="form-cancel-btn">Cancelar</button>
-        <button class="btn-primary" id="form-save-btn">Guardar patrón 🧶</button>
+      <div class="selected-color-row" id="tut-selected-row">
+        <div class="color-preview-swatch" id="tut-swatch"></div>
+        <span class="selected-color-name" id="tut-color-name">Ninguno</span>
       </div>
     </div>
+    <!-- ENLACE -->
+    <div class="form-group">
+      <label class="form-label">Enlace del tutorial</label>
+      <div style="display:flex;gap:var(--space-2)">
+        <select class="form-select" id="t-link-type" style="width:auto;padding:var(--space-3) var(--space-8) var(--space-3) var(--space-3)">
+          <option value="youtube">▶️ YouTube</option>
+          <option value="tiktok">🎵 TikTok</option>
+          <option value="instagram">📸 Instagram</option>
+          <option value="pdf">📄 PDF</option>
+          <option value="otro">🔗 Otro</option>
+        </select>
+        <input class="form-input" type="url" id="t-url" placeholder="https://…" style="flex:1"/>
+      </div>
+      <p class="form-hint">YouTube se incrusta automáticamente. Otros tipos se abren en nueva pestaña.</p>
+    </div>
+    <!-- DESCARGAR VIDEO -->
+    <div class="form-group" id="tut-download-row" style="display:none">
+      <label class="form-label">⬇️ Descargador</label>
+      <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">
+        <button type="button" class="btn-secondary" id="tut-get-info-btn" style="font-size:var(--fs-xs)">🔍 Obtener info</button>
+        <button type="button" class="btn-secondary" id="tut-transcript-btn" style="font-size:var(--fs-xs)">📝 Transcripción</button>
+        <button type="button" class="btn-primary" id="tut-download-btn" style="font-size:var(--fs-xs)">⬇️ Descargar video</button>
+      </div>
+      <div id="tut-download-result" style="margin-top:var(--space-2);font-size:var(--fs-xs);color:var(--color-text-muted)"></div>
+    </div>
+    <!-- ETIQUETAS -->
+    <div class="form-group">
+      <label class="form-label">Etiquetas</label>
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2)" id="tut-tag-selector">
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="pedido" style="display:none"> 📦 Pedido</label>
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="regalo" style="display:none"> 🎁 Regalo</label>
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="bolsa" style="display:none"> 🛍️ Bolsa</label>
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="urgente" style="display:none"> 🔥 Urgente</label>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" data-modal="modal-tutorial">Cancelar</button>
+      <button class="btn-primary" id="save-tutorial-btn">Guardar tutorial 🧶</button>
+    </div>
   </div>
+</div>
 
-  <!-- Input oculto para importar archivos JSON -->
-  <input type="file" id="import-file-input" accept=".json" />
+<!-- MODAL: NUEVO PROYECTO -->
+<div class="modal-overlay" id="modal-proyecto">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <h2 class="modal-title">🧶 Nuevo proyecto</h2>
+      <button class="modal-close" data-modal="modal-proyecto">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nombre del proyecto <span class="req">*</span></label>
+        <input class="form-input" type="text" id="p-nombre" placeholder="Ej. Muñeco Stitch grande" maxlength="80"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cliente (opcional)</label>
+        <input class="form-input" type="text" id="p-cliente" placeholder="Nombre del cliente" list="clients-datalist"/>
+        <datalist id="clients-datalist"></datalist>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Estado</label>
+        <select class="form-select" id="p-estado">
+          <option value="pendiente">⏳ Pendiente</option>
+          <option value="progreso">🔧 En progreso</option>
+          <option value="terminado">✅ Terminado</option>
+          <option value="entregado">📦 Entregado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de colores de estambre</label>
+        <input class="form-input" type="number" id="p-num-colors" placeholder="1" min="1" max="20" value="1"/>
+      </div>
+    </div>
+    <!-- Colores del proyecto -->
+    <div class="form-group">
+      <label class="form-label">Colores a usar</label>
+      <div id="p-colors-slots"></div>
+    </div>
+    <!-- Materiales extra -->
+    <div class="form-group">
+      <label class="form-label">Materiales extra (ojitos, alambre, botones…)</label>
+      <div id="p-extras-list"></div>
+      <button type="button" class="btn-add-color" id="p-add-extra-btn">+ Agregar extra</button>
+      <p class="form-hint">Puedes usar emojis para representar el material: 👀 ojitos · 🔗 alambre · 🪡 aguja</p>
+    </div>
+    <!-- Datos de costo -->
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Metros estimados de estambre</label>
+        <input class="form-input" type="number" id="p-metros" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Costo del material (MXN)</label>
+        <input class="form-input" type="number" id="p-costo-material" placeholder="0.00" min="0" step="0.01"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Horas estimadas de trabajo</label>
+        <input class="form-input" type="number" id="p-horas" placeholder="0" min="0" step="0.5"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nivel de detalle</label>
+        <select class="form-select" id="p-detalle">
+          <option value="20">Sin detalles (+20%)</option>
+          <option value="25">Poco detalle (+25%)</option>
+          <option value="30" selected>Det. moderados (+30%)</option>
+          <option value="35">Mucho detalle (+35%)</option>
+          <option value="40">Demasiados det. (+40%)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas / descripción</label>
+      <textarea class="form-textarea" id="p-notas" placeholder="Descripción, especificaciones, etc."></textarea>
+    </div>
+    <!-- Etiquetas -->
+    <div class="form-group">
+      <label class="form-label">Etiquetas</label>
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2)" id="proj-tag-selector">
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="pedido" style="display:none"> 📦 Pedido</label>
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="regalo" style="display:none"> 🎁 Regalo</label>
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="bolsa" style="display:none"> 🛍️ Bolsa</label>
+        <label class="color-chip" style="cursor:pointer"><input type="checkbox" value="urgente" style="display:none"> 🔥 Urgente</label>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" data-modal="modal-proyecto">Cancelar</button>
+      <button class="btn-primary" id="save-proyecto-btn">Guardar proyecto 🧶</button>
+    </div>
+  </div>
+</div>
 
-  <!-- Contenedor para notificaciones toast -->
-  <div class="toast-container" id="toast-container"></div>
+<!-- MODAL: NUEVO ESTAMBRE -->
+<div class="modal-overlay" id="modal-estambre">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">🧶 Agregar estambre</h2>
+      <button class="modal-close" data-modal="modal-estambre">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre / marca <span class="req">*</span></label>
+      <input class="form-input" type="text" id="y-nombre" placeholder="Ej. Caron · Amigurumi suave"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Color <span class="req">*</span></label>
+        <div class="color-chips-grid" id="yarn-color-chips" style="max-height:120px;overflow-y:auto"></div>
+        <div class="selected-color-row" id="yarn-selected-row" style="margin-top:var(--space-2)">
+          <div class="color-preview-swatch" id="yarn-swatch"></div>
+          <span class="selected-color-name" id="yarn-color-name">Ninguno</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gramaje (g)</label>
+        <input class="form-input" type="number" id="y-gramaje" placeholder="100" min="0"/>
+        <label class="form-label" style="margin-top:var(--space-2)">Cantidad (bolas)</label>
+        <input class="form-input" type="number" id="y-cantidad" placeholder="1" min="1"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nivel actual</label>
+      <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+        <button type="button" class="detail-btn selected" data-level="100">🟢 Completo</button>
+        <button type="button" class="detail-btn" data-level="75">🟡 Sobra mucho</button>
+        <button type="button" class="detail-btn" data-level="50">🟠 Sobra poco</button>
+        <button type="button" class="detail-btn" data-level="25">🔴 Casi sin</button>
+        <button type="button" class="detail-btn" data-level="0">⚫ Agotado</button>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" data-modal="modal-estambre">Cancelar</button>
+      <button class="btn-primary" id="save-estambre-btn">Guardar estambre</button>
+    </div>
+  </div>
+</div>
 
-  <!-- Lógica de la aplicación — edita app.js para cambiar comportamiento -->
-  <script src="app.js"></script>
+<!-- MODAL: NUEVO CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">👤 Nuevo cliente</h2>
+      <button class="modal-close" data-modal="modal-cliente">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nombre <span class="req">*</span></label>
+        <input class="form-input" type="text" id="c-nombre" placeholder="Nombre completo"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono / WhatsApp</label>
+        <input class="form-input" type="tel" id="c-tel" placeholder="+52 …"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas</label>
+      <textarea class="form-textarea" id="c-notas" placeholder="Preferencias, colores favoritos, etc."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" data-modal="modal-cliente">Cancelar</button>
+      <button class="btn-primary" id="save-cliente-btn">Guardar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MARCAR PROYECTO TERMINADO -->
+<div class="modal-overlay" id="modal-finish">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">🎉 Marcar como terminado</h2>
+      <button class="modal-close" data-modal="modal-finish">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Precio final de venta (MXN)</label>
+      <input class="form-input" type="number" id="f-precio-real" placeholder="0.00" min="0" step="0.01"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tiempo real invertido</label>
+      <input class="form-input" type="text" id="f-tiempo-real" placeholder="Ej. 3 días / 12 horas"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas o comentarios finales</label>
+      <textarea class="form-textarea" id="f-notas" placeholder="Detalles de entrega, comentarios del cliente..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" data-modal="modal-finish">Cancelar</button>
+      <button class="btn-primary" id="confirm-finish-btn">Guardar y finalizar 🎉</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>

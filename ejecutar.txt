@@ -1,1 +1,5 @@
+venv\Scripts\activate priemro activamso el entrono virtual
+abrimos un aterinal nueva u despues se ejecuta el siguiente comando 
+
+
 pip install -r requirements.txt

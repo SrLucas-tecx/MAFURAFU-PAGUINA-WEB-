@@ -56,6 +56,8 @@ const SK = {
   projects:  'mafurafu_projects',
   quotes:    'mafurafu_quotes',
   yarns:     'mafurafu_yarns',
+  materials: 'mafurafu_materials',
+  uploads:   'mafurafu_uploads',
   clients:   'mafurafu_clients',
   colors:    'mafurafu_customColors',
   settings:  'mafurafu_settings',
@@ -70,6 +72,8 @@ let state = {
   projects:     [],
   quotes:       [],
   yarns:        [],
+  materials:    [],  // otros insumos: ojitos, relleno, telas, etc.
+  uploadedPatterns: [], // archivos de patrones subidos (cualquier formato)
   clients:      [],
   customColors: [],
   settings: {
@@ -185,12 +189,26 @@ function load(key, fallback=[]) {
 }
 
 function loadAll() {
+  state.customColors = load(SK.colors,   []);
   state.patterns     = load(SK.patterns, MOCK_PATTERNS);
+  // Migración: asegurar que cada tutorial tenga un arreglo `colors`
+  // (colores primarios/secundarios). Los tutoriales antiguos solo
+  // tenían un color único en `color`/`colorHex`.
+  state.patterns.forEach(p=>{
+    if(!Array.isArray(p.colors)||!p.colors.length) {
+      p.colors = p.color ? [{ name:p.color, hex:p.colorHex||getHex(p.color), type:'primario' }] : [];
+    }
+  });
   state.projects     = load(SK.projects, []);
+  // Migración: asegurar que los colores de proyecto tengan `type`
+  state.projects.forEach(pr=>{
+    (pr.colors||[]).forEach(c=>{ if(!c.type) c.type='primario'; });
+  });
   state.quotes       = load(SK.quotes,   []);
   state.yarns        = load(SK.yarns,    MOCK_YARNS);
+  state.materials    = load(SK.materials, []);
+  state.uploadedPatterns = load(SK.uploads, []);
   state.clients      = load(SK.clients,  MOCK_CLIENTS);
-  state.customColors = load(SK.colors,   []);
   const s            = load(SK.settings, {});
   state.settings     = { ...state.settings, ...s };
 
@@ -208,6 +226,8 @@ function savePatterns()  { save(SK.patterns, state.patterns); }
 function saveProjects()  { save(SK.projects, state.projects); }
 function saveQuotes()    { save(SK.quotes,   state.quotes); }
 function saveYarns()     { save(SK.yarns,    state.yarns); }
+function saveMaterials() { save(SK.materials, state.materials); }
+function saveUploads()   { save(SK.uploads,   state.uploadedPatterns); }
 function saveClients()   { save(SK.clients,  state.clients); }
 function saveColors()    { save(SK.colors,   state.customColors); }
 function saveSettings()  { save(SK.settings, state.settings); }
@@ -220,6 +240,26 @@ function allColors() { return [...YARN_COLORS_DEFAULT, ...state.customColors]; }
 function getHex(name) {
   const c=allColors().find(x=>x.name===name);
   return c?c.hex:'#9b6dff';
+}
+
+// Devuelve el hex "representativo" de un tutorial/proyecto con
+// varios colores: prioriza el primer color primario, si no hay,
+// usa el primero disponible.
+function mainColorHex(colorsArr, fallbackName, fallbackHex) {
+  if(Array.isArray(colorsArr)&&colorsArr.length) {
+    const primary=colorsArr.find(c=>c.type==='primario')||colorsArr[0];
+    return primary.hex||getHex(primary.name);
+  }
+  return fallbackHex||getHex(fallbackName);
+}
+
+// Genera los puntitos de color (con distinción primario/secundario)
+// usados en tarjetas de tutoriales y proyectos.
+function colorsDotsHtml(colorsArr) {
+  return (colorsArr||[]).map(c=>{
+    const hex=c.hex||getHex(c.name);
+    return `<span class="card-color-dot${c.type==='secundario'?' is-secundario':''}" style="background:${hex}" title="${escHtml(c.name)} (${c.type==='secundario'?'secundario':'primario'})"></span>`;
+  }).join('');
 }
 
 function toEmbedUrl(url) {
@@ -265,6 +305,7 @@ function hexToSoft(hex) {
 }
 
 function renderCustomizePanel() {
+  renderColorManager();
   // Temas de color
   const tr=document.getElementById('color-themes-row');
   if(tr) {
@@ -365,6 +406,53 @@ function renderCustomizePanel() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   MÓDULO: GESTIÓN GLOBAL DE COLORES (página Personalizar)
+   Sección independiente para agregar/eliminar colores de
+   estambre disponibles en toda la app (tutoriales, proyectos,
+   estambres).
+═══════════════════════════════════════════════════════════ */
+function renderColorManager() {
+  const grid=document.getElementById('color-manage-grid');
+  if(!grid)return;
+  grid.innerHTML=allColors().map((c,i)=>{
+    const isDefault=i<YARN_COLORS_DEFAULT.length;
+    return `<div class="color-manage-item${isDefault?' is-default':''}">
+      <span class="cm-dot" style="background:${c.hex}"></span>
+      <span class="cm-name">${escHtml(c.name)}</span>
+      ${!isDefault?`<button type="button" class="cm-remove" data-r="${escHtml(c.name)}" title="Eliminar color">×</button>`:''}
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.cm-remove').forEach(b=>{
+    b.addEventListener('click',()=>{
+      if(!confirm(`¿Eliminar color "${b.dataset.r}"?`))return;
+      state.customColors=state.customColors.filter(c=>c.name!==b.dataset.r);
+      saveColors(); renderColorPalette(); renderColorManager();
+      showToast('🗑 Color eliminado');
+    });
+  });
+
+  // Botón "+ Agregar color" — se conecta una sola vez (evita duplicados
+  // porque este panel se vuelve a renderizar cada vez que se navega
+  // a la página Personalizar)
+  const addBtn=document.getElementById('cm-add-btn');
+  if(addBtn && !addBtn.dataset.bound) {
+    addBtn.dataset.bound='1';
+    addBtn.addEventListener('click',()=>{
+      const nameInput=document.getElementById('cm-new-name');
+      const hexInput=document.getElementById('cm-new-hex');
+      const nm=(nameInput?.value||'').trim();
+      const hx=hexInput?.value||'#9b6dff';
+      if(!nm){showToast('⚠️ Escribe un nombre para el color','error');return;}
+      if(allColors().find(c=>c.name.toLowerCase()===nm.toLowerCase())){showToast(`"${nm}" ya existe`,'error');return;}
+      state.customColors.push({name:nm,hex:hx,custom:true});
+      saveColors(); renderColorPalette(); renderColorManager();
+      if(nameInput) nameInput.value='';
+      showToast(`✅ Color "${nm}" agregado`,'success');
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    MÓDULO: NAVEGACIÓN
 ═══════════════════════════════════════════════════════════ */
 function navigateTo(page) {
@@ -372,7 +460,7 @@ function navigateTo(page) {
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   document.querySelectorAll('.page-section').forEach(s=>s.classList.toggle('active',s.id===`page-${page}`));
 
-  const titles={tutoriales:'Tutoriales',proyectos:'Proyectos',cotizaciones:'Cotizaciones',estambres:'Estambres',clientes:'Clientes',personalizar:'Personalizar'};
+  const titles={tutoriales:'Tutoriales',proyectos:'Proyectos',cotizaciones:'Cotizaciones',estambres:'Estambres',materiales:'Materiales','patrones-subidos':'Patrones subidos','crear-patrones':'Crear patrones',clientes:'Clientes',personalizar:'Personalizar'};
   const el=document.getElementById('header-page-title');
   if(el) el.textContent=titles[page]||page;
 
@@ -381,7 +469,7 @@ function navigateTo(page) {
 
   // Actualizar búsqueda placeholder
   const si=document.getElementById('search-input');
-  if(si) si.placeholder={tutoriales:'Buscar tutoriales…',proyectos:'Buscar proyectos…',cotizaciones:'Buscar cotizaciones…',estambres:'Buscar estambres…',clientes:'Buscar clientes…',personalizar:''}[page]||'Buscar…';
+  if(si) si.placeholder={tutoriales:'Buscar tutoriales…',proyectos:'Buscar proyectos…',cotizaciones:'Buscar cotizaciones…',estambres:'Buscar estambres…',materiales:'Buscar materiales…','patrones-subidos':'Buscar archivos…',clientes:'Buscar clientes…',personalizar:''}[page]||'Buscar…';
 
   renderCurrentPage();
 }
@@ -392,6 +480,9 @@ function renderCurrentPage() {
   if(p==='proyectos')   { renderColorPalette(); renderProjects(); }
   if(p==='cotizaciones'){ renderQuotes(); }
   if(p==='estambres')   { renderYarns(); }
+  if(p==='materiales')  { renderMaterials(); }
+  if(p==='patrones-subidos'){ renderUploadedFiles(); }
+  if(p==='crear-patrones'){ renderPatternColorSwatches('cp-colors','cp-editor'); }
   if(p==='clientes')    { renderClients(); }
   if(p==='personalizar'){ renderCustomizePanel(); }
 }
@@ -521,6 +612,160 @@ function colorWidgetSetup(cfg) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   MÓDULO: SELECTOR MÚLTIPLE DE COLORES (PRIMARIOS/SECUNDARIOS)
+   Permite elegir varios colores a la vez, divididos en dos
+   grupos: primarios y secundarios. Se usa en tutoriales.
+   multiColorWidgetSetup(cfg):
+   { tabsId, chipGridId, addBtnId, panelId, pickerId, hexId,
+     previewId, nameId, saveId, summaryId,
+     countPrimarioId, countSecundarioId, initial:[{name,hex,type}] }
+═══════════════════════════════════════════════════════════ */
+function multiColorWidgetSetup(cfg) {
+  const { tabsId, chipGridId, addBtnId, panelId, pickerId, hexId, previewId, nameId, saveId, summaryId, countPrimarioId, countSecundarioId } = cfg;
+  cfg.selected = Array.isArray(cfg.initial) ? cfg.initial.map(c=>({...c})) : [];
+  cfg.activeType = 'primario';
+
+  function isSelected(name) { return cfg.selected.find(c=>c.name===name); }
+
+  function toggleColor(name,hex) {
+    const existing=isSelected(name);
+    if(existing && existing.type===cfg.activeType) {
+      // ya estaba en el grupo activo → lo quitamos
+      cfg.selected=cfg.selected.filter(c=>c.name!==name);
+    } else if(existing) {
+      // estaba en el otro grupo → lo movemos al grupo activo
+      existing.type=cfg.activeType;
+    } else {
+      cfg.selected.push({name,hex,type:cfg.activeType});
+    }
+    renderAll();
+  }
+
+  function removeColor(name) {
+    cfg.selected=cfg.selected.filter(c=>c.name!==name);
+    renderAll();
+  }
+
+  function renderTabs() {
+    const tabs=document.getElementById(tabsId);
+    if(!tabs)return;
+    tabs.querySelectorAll('.color-type-tab').forEach(t=>{
+      t.classList.toggle('active', t.dataset.type===cfg.activeType);
+    });
+    const cp=document.getElementById(countPrimarioId);
+    const cs=document.getElementById(countSecundarioId);
+    if(cp) cp.textContent=cfg.selected.filter(c=>c.type==='primario').length;
+    if(cs) cs.textContent=cfg.selected.filter(c=>c.type==='secundario').length;
+  }
+
+  function renderChips() {
+    const grid=document.getElementById(chipGridId);
+    if(!grid)return;
+    grid.innerHTML=allColors().map(({name,hex},i)=>{
+      const sel=isSelected(name);
+      const isCustom=i>=YARN_COLORS_DEFAULT.length;
+      const tc=isLight(hex)?'#2d2040':'#ffffff';
+      const markedClass=sel?` type-marked-${sel.type}`:'';
+      const badge=sel?`<span class="chip-type-badge ${sel.type==='primario'?'p':'s'}">${sel.type==='primario'?'P':'S'}</span>`:'';
+      return `<button type="button" class="color-chip${sel?' selected':''}${markedClass}"
+        data-cn="${escHtml(name)}" data-ch="${escHtml(hex)}"
+        style="color:${tc};background:${hex};border-color:${sel?'#2d2040':'transparent'}">
+        <span class="chip-dot" style="background:${hex}"></span>${escHtml(name)}${badge}
+        ${isCustom?`<button type="button" class="chip-remove" data-r="${escHtml(name)}">×</button>`:''}
+      </button>`;
+    }).join('');
+
+    grid.querySelectorAll('.color-chip').forEach(ch=>{
+      ch.addEventListener('click',e=>{
+        if(e.target.closest('.chip-remove'))return;
+        toggleColor(ch.dataset.cn, ch.dataset.ch);
+      });
+    });
+    grid.querySelectorAll('.chip-remove').forEach(b=>{
+      b.addEventListener('click',e=>{
+        e.stopPropagation();
+        if(!confirm(`¿Eliminar color "${b.dataset.r}"?`))return;
+        state.customColors=state.customColors.filter(c=>c.name!==b.dataset.r);
+        saveColors(); renderColorPalette(); renderColorManager();
+        removeColor(b.dataset.r);
+        showToast('🗑 Color eliminado');
+      });
+    });
+  }
+
+  function renderSummary() {
+    const box=document.getElementById(summaryId);
+    if(!box)return;
+    const primarios=cfg.selected.filter(c=>c.type==='primario');
+    const secundarios=cfg.selected.filter(c=>c.type==='secundario');
+    if(!cfg.selected.length) {
+      box.innerHTML='<span class="color-empty-hint">Aún no has elegido ningún color.</span>';
+      return;
+    }
+    const grp=(label,list)=>{
+      if(!list.length)return'';
+      const tags=list.map(c=>`<span class="selected-color-tag is-${c.type}">
+        <span class="chip-dot" style="background:${c.hex}"></span>${escHtml(c.name)}
+        <button type="button" class="stag-remove" data-r="${escHtml(c.name)}">×</button>
+      </span>`).join('');
+      return `<div class="selected-colors-group"><span class="selected-colors-group-label">${label}</span>${tags}</div>`;
+    };
+    box.innerHTML=grp('🎯 Primarios',primarios)+grp('🌈 Secundarios',secundarios);
+    box.querySelectorAll('.stag-remove').forEach(b=>{
+      b.addEventListener('click',()=>removeColor(b.dataset.r));
+    });
+  }
+
+  function renderAll() { renderTabs(); renderChips(); renderSummary(); }
+
+  // Pestañas Primario/Secundario
+  const tabs=document.getElementById(tabsId);
+  if(tabs) {
+    tabs.querySelectorAll('.color-type-tab').forEach(t=>{
+      t.addEventListener('click',()=>{ cfg.activeType=t.dataset.type; renderAll(); });
+    });
+  }
+
+  // Rueda de color / hex (para el panel "agregar color personalizado")
+  function syncCCP(hex) {
+    const pk=document.getElementById(pickerId);
+    const hx=document.getElementById(hexId);
+    const pv=document.getElementById(previewId);
+    if(pk) pk.value=hex;
+    if(hx) hx.value=hex;
+    if(pv) pv.style.backgroundColor=hex;
+  }
+  const pk=document.getElementById(pickerId);
+  const hx=document.getElementById(hexId);
+  if(pk) { syncCCP(pk.value); pk.addEventListener('input',()=>syncCCP(pk.value)); }
+  if(hx) { hx.addEventListener('input',()=>{ const n=normHex(hx.value); if(n){syncCCP(n);} }); }
+
+  const addBtn=document.getElementById(addBtnId);
+  const panel=document.getElementById(panelId);
+  if(addBtn&&panel) addBtn.addEventListener('click',()=>panel.classList.toggle('open'));
+
+  const saveBtn=document.getElementById(saveId);
+  if(saveBtn) {
+    saveBtn.addEventListener('click',()=>{
+      const hxv=normHex(document.getElementById(hexId)?.value)||document.getElementById(pickerId)?.value;
+      const nm=(document.getElementById(nameId)?.value||'').trim();
+      if(!nm){showToast('⚠️ Escribe un nombre','error');return;}
+      if(allColors().find(c=>c.name.toLowerCase()===nm.toLowerCase())){showToast(`"${nm}" ya existe`,'error');return;}
+      state.customColors.push({name:nm,hex:hxv,custom:true});
+      saveColors(); renderColorPalette(); renderColorManager();
+      toggleColor(nm,hxv);
+      if(panel)panel.classList.remove('open');
+      if(document.getElementById(nameId)) document.getElementById(nameId).value='';
+      showToast(`✅ Color "${nm}" guardado`,'success');
+    });
+  }
+
+  cfg.renderAll=renderAll;
+  renderAll();
+  return cfg;
+}
+
+/* ═══════════════════════════════════════════════════════════
    MÓDULO: TUTORIALES (CARRUSEL + CATÁLOGO)
 ═══════════════════════════════════════════════════════════ */
 let tutColorWidget=null;
@@ -528,9 +773,10 @@ let tutColorWidget=null;
 function getFilteredTuts() {
   const q=state.ui.searchQuery.toLowerCase().trim();
   return state.patterns.filter(p=>{
-    if(state.ui.filterColor!=='Todos'&&p.color!==state.ui.filterColor)return false;
+    const colorNames=(p.colors&&p.colors.length)?p.colors.map(c=>c.name):[p.color].filter(Boolean);
+    if(state.ui.filterColor!=='Todos'&&!colorNames.includes(state.ui.filterColor))return false;
     if(state.ui.filterTagTut&&!(p.tags||[]).includes(state.ui.filterTagTut))return false;
-    if(q&&!`${p.titulo} ${p.personaje} ${p.saga} ${p.color}`.toLowerCase().includes(q))return false;
+    if(q&&!`${p.titulo} ${p.personaje} ${p.saga} ${colorNames.join(' ')}`.toLowerCase().includes(q))return false;
     return true;
   });
 }
@@ -541,7 +787,7 @@ function renderCarousel() {
   const recent=[...state.patterns].sort((a,b)=>b.fecha-a.fecha).slice(0,6);
   if(!recent.length){track.innerHTML='<p class="carousel-empty">Aún no hay tutoriales guardados.</p>';return;}
   track.innerHTML=recent.map(p=>{
-    const hex=p.colorHex||getHex(p.color);
+    const hex=mainColorHex(p.colors,p.color,p.colorHex);
     const embed=toEmbedUrl(p.url);
     return `<div class="carousel-card" style="--yarn-color:${hex}" data-id="${p.id}" role="button" tabindex="0" title="${escHtml(p.titulo)}">
       <div class="carousel-card-thumb">${embed?'▶️':'🧶'}</div>
@@ -574,6 +820,7 @@ function renderCatalog() {
   grid.innerHTML=filtered.map(p=>renderTutCard(p)).join('');
   grid.querySelectorAll('.btn-delete').forEach(b=>b.addEventListener('click',()=>deleteTutorial(b.dataset.id)));
   grid.querySelectorAll('.card-link-edit').forEach(b=>b.addEventListener('click',()=>openEditLink(b.dataset.id)));
+  grid.querySelectorAll('.view-pattern-btn').forEach(b=>b.addEventListener('click',()=>openViewPattern(b.dataset.id)));
   grid.querySelectorAll('.btn-play').forEach(b=>b.addEventListener('click',()=>{
     const p=state.patterns.find(x=>x.id===b.dataset.id);
     if(p){p.vistas=(p.vistas||0)+1;savePatterns();}
@@ -582,11 +829,13 @@ function renderCatalog() {
 }
 
 function renderTutCard(p) {
-  const hex=p.colorHex||getHex(p.color);
+  const hex=mainColorHex(p.colors,p.color,p.colorHex);
   const embed=toEmbedUrl(p.url);
   const tc=isLight(hex)?'#2d2040':'#ffffff';
   const platformIcon=PLATFORM_ICONS[p.linkType||'outro']||'🔗';
   const tagHtml=(p.tags||[]).map(t=>`<span class="tag ${TAG_CLASSES[t]||'tag-custom'}">${t}</span>`).join('');
+  const colorsArr=(p.colors&&p.colors.length)?p.colors:(p.color?[{name:p.color,hex:p.colorHex||getHex(p.color),type:'primario'}]:[]);
+  const colorNames=colorsArr.map(c=>c.name).join(', ')||'—';
 
   let videoSection='';
   if(embed) {
@@ -604,8 +853,9 @@ function renderTutCard(p) {
       <div class="card-meta">
         <span class="tag tag-persona">🎭 ${escHtml(p.personaje)}</span>
         ${p.saga?`<span class="tag tag-saga">📺 ${escHtml(p.saga)}</span>`:''}
-        <span class="tag tag-color" style="background:${hex};color:${tc}">🧶 ${escHtml(p.color)}</span>
+        <span class="tag tag-color" style="background:${hex};color:${tc}">🧶 ${escHtml(colorNames)}</span>
       </div>
+      <div class="card-colors-row">${colorsDotsHtml(colorsArr)}</div>
       ${tagHtml?`<div class="card-tags">${tagHtml}</div>`:''}
       <div class="card-link-row">
         <span>${platformIcon} ${p.linkType||'sin enlace'}</span>
@@ -613,6 +863,7 @@ function renderTutCard(p) {
       </div>
       <div class="card-footer-row">
         <span class="card-views">👁 ${p.vistas||0} · ${timeAgo(p.fecha)}</span>
+        ${p.patronEscrito?`<button class="card-pattern-btn view-pattern-btn" data-id="${p.id}">📝 Patrón</button>`:''}
         ${embed?`<button class="btn-success btn-play" data-id="${p.id}" data-url="${escHtml(embed)}" data-title="${escHtml(p.titulo)}" style="font-size:var(--fs-xs)">▶️ Ver</button>`:''}
         <button class="btn-danger btn-delete" data-id="${p.id}" style="font-size:var(--fs-xs)">🗑</button>
       </div>
@@ -690,7 +941,7 @@ function renderProjectCard(p) {
   }
 
   const extras=(p.extras||[]).map(e=>`<span class="tag tag-custom">${e}</span>`).join('');
-  const colors=(p.colors||[]).map(c=>`<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c.hex||getHex(c.name)};border:1.5px solid rgba(0,0,0,.15);" title="${c.name}"></span>`).join('');
+  const colors=colorsDotsHtml(p.colors);
 
   return `<div class="project-card">
     <div class="project-card-header">
@@ -872,6 +1123,128 @@ function renderYarns() {
       }
       saveYarns(); renderYarns();
     });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MÓDULO: MATERIALES (insumos genéricos: ojitos, relleno, telas…)
+   No están atados a un color de estambre, así que se guardan
+   con su propia categoría, cantidad y notas.
+═══════════════════════════════════════════════════════════ */
+const MATERIAL_ICONS = {
+  'Ojitos':'👀','Relleno':'☁️','Tela':'🧵','Agujas/ganchos':'🪡',
+  'Broches/accesorios':'🔘','Otro':'📦',
+};
+
+function renderMaterials() {
+  const grid=document.getElementById('material-inventory-grid');
+  const countEl=document.getElementById('material-count');
+  if(!grid)return;
+  const q=state.ui.searchQuery.toLowerCase();
+  const list=state.materials.filter(m=>!q||`${m.nombre} ${m.categoria} ${m.notas||''}`.toLowerCase().includes(q));
+  if(countEl)countEl.textContent=`${list.length} artículo${list.length!==1?'s':''}`;
+  if(!list.length){grid.innerHTML=`<div class="catalog-empty"><span class="catalog-empty-icon">📦</span><h3>Sin materiales</h3><p>Agrega ojitos, relleno, telas y más con el botón +</p></div>`;return;}
+
+  grid.innerHTML=list.map(m=>`<div class="yarn-ball-card">
+      <div class="yarn-ball-top">
+        <div class="yarn-ball-icon material-card-icon" style="background:var(--color-accent-soft);border-color:var(--color-border)">
+          <span>${MATERIAL_ICONS[m.categoria]||'📦'}</span>
+        </div>
+        <div>
+          <div class="yarn-ball-name">${escHtml(m.nombre)}</div>
+          <div class="yarn-ball-meta">${escHtml(m.categoria)} · ${m.cantidad||0} unid.</div>
+        </div>
+      </div>
+      ${m.notas?`<p class="form-hint" style="margin:0">${escHtml(m.notas)}</p>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span></span>
+        <div style="display:flex;gap:4px">
+          <button class="btn-icon" data-mid="${m.id}" data-action="up" title="Sumar 1" style="width:28px;height:28px;font-size:.8rem">+</button>
+          <button class="btn-icon" data-mid="${m.id}" data-action="down" title="Restar 1" style="width:28px;height:28px;font-size:.8rem">−</button>
+          <button class="btn-danger" data-mid="${m.id}" data-action="del" style="font-size:var(--fs-xs);padding:2px 8px">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+
+  grid.querySelectorAll('[data-action]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const mat=state.materials.find(x=>x.id===b.dataset.mid);
+      if(!mat)return;
+      if(b.dataset.action==='up') mat.cantidad=(mat.cantidad||0)+1;
+      if(b.dataset.action==='down') mat.cantidad=Math.max(0,(mat.cantidad||0)-1);
+      if(b.dataset.action==='del'){
+        if(!confirm(`¿Eliminar "${mat.nombre}"?`))return;
+        state.materials=state.materials.filter(x=>x.id!==b.dataset.mid);
+      }
+      saveMaterials(); renderMaterials();
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MÓDULO: PATRONES SUBIDOS (archivos en cualquier formato)
+   Los archivos se guardan como Data URL en localStorage, así
+   que conviene subir archivos ligeros (unos pocos MB).
+═══════════════════════════════════════════════════════════ */
+function fileKindIcon(type,name) {
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  if(type.includes('pdf')||ext==='pdf') return '📕';
+  if(type.includes('word')||['doc','docx'].includes(ext)) return '📘';
+  if(type.startsWith('image/')) return '🖼️';
+  if(type.includes('text')||ext==='txt') return '📄';
+  return '📎';
+}
+
+function renderUploadedFiles() {
+  const grid=document.getElementById('uploaded-files-grid');
+  const countEl=document.getElementById('upload-count');
+  if(!grid)return;
+  const q=state.ui.searchQuery.toLowerCase();
+  const list=state.uploadedPatterns.filter(f=>!q||f.name.toLowerCase().includes(q));
+  if(countEl)countEl.textContent=`${list.length} archivo${list.length!==1?'s':''}`;
+  if(!list.length){grid.innerHTML=`<div class="catalog-empty"><span class="catalog-empty-icon">📤</span><h3>Sin archivos</h3><p>Sube patrones en PDF, Word, TXT o imagen con el botón de arriba</p></div>`;return;}
+
+  grid.innerHTML=list.map(f=>`<div class="uploaded-file-card">
+      <span class="uf-icon">${fileKindIcon(f.type||'',f.name)}</span>
+      <span class="uf-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+      <span class="uf-meta">${(f.size/1024).toFixed(0)} KB · ${timeAgo(f.fecha)}</span>
+      <div class="uf-actions">
+        <a class="uf-view" href="${f.dataUrl}" download="${escHtml(f.name)}">⬇️ Descargar</a>
+        <button type="button" class="uf-del" data-fid="${f.id}">🗑 Eliminar</button>
+      </div>
+    </div>`).join('');
+
+  grid.querySelectorAll('.uf-del').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const f=state.uploadedPatterns.find(x=>x.id===b.dataset.fid);
+      if(!f)return;
+      if(!confirm(`¿Eliminar "${f.name}"?`))return;
+      state.uploadedPatterns=state.uploadedPatterns.filter(x=>x.id!==b.dataset.fid);
+      saveUploads(); renderUploadedFiles();
+    });
+  });
+}
+
+function handlePatternFileUpload(fileList) {
+  const files=[...fileList];
+  if(!files.length)return;
+  let pending=files.length;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      state.uploadedPatterns.unshift({
+        id:uid('f'),name:file.name,type:file.type||'',size:file.size,
+        dataUrl:reader.result,fecha:Date.now(),
+      });
+      pending--;
+      if(pending===0) { saveUploads(); renderUploadedFiles(); showToast(`✅ ${files.length} archivo${files.length!==1?'s':''} subido${files.length!==1?'s':''}`,'success'); }
+    };
+    reader.onerror=()=>{
+      pending--;
+      showToast(`❌ No se pudo leer "${file.name}"`,'error');
+      if(pending===0) { saveUploads(); renderUploadedFiles(); }
+    };
+    reader.readAsDataURL(file);
   });
 }
 
@@ -1081,7 +1454,7 @@ function importFile(file) {
         if(d.customColors) state.customColors=d.customColors;
         if(d.settings) state.settings={...state.settings,...d.settings};
       }
-      savePatterns();saveProjects();saveQuotes();saveYarns();saveClients();saveColors();saveSettings();
+      savePatterns();saveProjects();saveQuotes();saveYarns();saveMaterials();saveUploads();saveClients();saveColors();saveSettings();
       renderCurrentPage(); showToast('✅ Datos importados','success');
     } catch(e){showToast('❌ Error al importar: '+e.message,'error');}
   };
@@ -1115,6 +1488,8 @@ function initSidebarMobile() {
 ═══════════════════════════════════════════════════════════ */
 function initEvents() {
 
+  setupPatternToolbars();
+
   // Navegación sidebar
   document.querySelectorAll('.nav-item[data-page]').forEach(b=>{
     b.addEventListener('click',()=>{
@@ -1138,12 +1513,27 @@ function initEvents() {
 
   // FAB contextual
   document.getElementById('fab-btn')?.addEventListener('click',()=>{
-    const map={tutoriales:'modal-tutorial',proyectos:'modal-proyecto',estambres:'modal-estambre',clientes:'modal-cliente',cotizaciones:null};
+    if(state.ui.currentPage==='patrones-subidos') {
+      document.getElementById('pattern-file-input')?.click();
+      return;
+    }
+    const map={tutoriales:'modal-tutorial',proyectos:'modal-proyecto',estambres:'modal-estambre',materiales:'modal-material',clientes:'modal-cliente',cotizaciones:null};
     const m=map[state.ui.currentPage];
     if(m){
       initModalContext(m);
       openModal(m);
     }
+  });
+
+  // Subida de archivos de patrones (cualquier formato)
+  document.getElementById('pattern-file-input')?.addEventListener('change',e=>{
+    handlePatternFileUpload(e.target.files);
+    e.target.value='';
+  });
+  document.getElementById('upload-dropzone')?.addEventListener('dragover',e=>e.preventDefault());
+  document.getElementById('upload-dropzone')?.addEventListener('drop',e=>{
+    e.preventDefault();
+    if(e.dataTransfer?.files?.length) handlePatternFileUpload(e.dataTransfer.files);
   });
 
   // Cerrar modales (botones X y fondo)
@@ -1162,17 +1552,36 @@ function initEvents() {
     const saga=document.getElementById('t-saga').value.trim();
     const url=document.getElementById('t-url').value.trim();
     const linkType=document.getElementById('t-link-type').value;
+    const patronEscrito=document.getElementById('t-patron-editor')?.innerHTML.trim()||'';
     if(!titulo||!personaje){showToast('⚠️ Título y personaje son obligatorios','error');return;}
-    if(!tutColorWidget?.currentSelected){showToast('⚠️ Elige un color de estambre','error');return;}
+    const colorsSel=tutColorWidget?.selected||[];
+    if(!colorsSel.length){showToast('⚠️ Elige al menos un color de estambre','error');return;}
+    const primary=colorsSel.find(c=>c.type==='primario')||colorsSel[0];
     const tags=[...document.querySelectorAll('#tut-tag-selector input:checked')].map(x=>x.value);
     state.patterns.unshift({
       id:uid('t'),titulo,personaje,saga,
-      color:tutColorWidget.currentSelected.name,
-      colorHex:tutColorWidget.currentSelected.hex,
+      colors:colorsSel.map(c=>({...c})),
+      color:primary.name, colorHex:primary.hex,
+      patronEscrito,
       linkType,url,fecha:Date.now(),vistas:0,tags
     });
     savePatterns();renderCarousel();renderCatalog();closeModal('modal-tutorial');
     showToast('✅ Tutorial guardado','success');
+  });
+
+  // EXPORTAR PATRÓN ESCRITO (desde el formulario de nuevo tutorial)
+  document.getElementById('tut-export-txt-btn')?.addEventListener('click',()=>{
+    const titulo=document.getElementById('t-titulo')?.value.trim()||'patron';
+    const editor=document.getElementById('t-patron-editor');
+    const texto=editor?.innerText.trim()||'';
+    if(!texto){showToast('⚠️ Escribe el patrón primero','error');return;}
+    exportPatternAsTXT(titulo,texto);
+  });
+  document.getElementById('tut-export-pdf-btn')?.addEventListener('click',()=>{
+    const titulo=document.getElementById('t-titulo')?.value.trim()||'patron';
+    const editor=document.getElementById('t-patron-editor');
+    if(!editor?.innerText.trim()){showToast('⚠️ Escribe el patrón primero','error');return;}
+    exportPatternAsPDF(titulo,editor.innerHTML);
   });
 
   // GUARDAR PROYECTO
@@ -1183,7 +1592,8 @@ function initEvents() {
     const pColors=[...document.querySelectorAll('.project-color-slot')].map(el=>{
       const name=el.querySelector('.slot-color-name')?.textContent||'';
       const hex=el.querySelector('.slot-color-dot')?.style.background||getHex(name);
-      return{name,hex};
+      const type=el.querySelector('.slot-type-btn.active')?.dataset.type||'primario';
+      return{name,hex,type};
     }).filter(c=>c.name&&c.name!=='Ninguno');
     const tags=[...document.querySelectorAll('#proj-tag-selector input:checked')].map(x=>x.value);
     state.projects.unshift({
@@ -1200,6 +1610,22 @@ function initEvents() {
     });
     saveProjects();renderProjects();closeModal('modal-proyecto');
     showToast('✅ Proyecto guardado','success');
+  });
+
+  // GUARDAR MATERIAL
+  document.getElementById('save-material-btn')?.addEventListener('click',()=>{
+    const nombre=document.getElementById('m-nombre').value.trim();
+    if(!nombre){showToast('⚠️ El nombre es obligatorio','error');return;}
+    state.materials.unshift({
+      id:uid('mat'),
+      nombre,
+      categoria:document.getElementById('m-categoria').value,
+      cantidad:Number(document.getElementById('m-cantidad').value||0),
+      notas:document.getElementById('m-notas').value.trim(),
+      fecha:Date.now(),
+    });
+    saveMaterials(); renderMaterials(); closeModal('modal-material');
+    showToast('✅ Material guardado','success');
   });
 
   // GUARDAR ESTAMBRE
@@ -1347,6 +1773,86 @@ function initEvents() {
     row.querySelector('.btn-danger').addEventListener('click',()=>row.remove());
     list.appendChild(row);
   });
+
+  // MODAL: VER / EXPORTAR PATRÓN ESCRITO
+  document.getElementById('vp-export-txt-btn')?.addEventListener('click',()=>{
+    const titulo=document.getElementById('vp-title')?.textContent.replace(/^📝\s*/,'')||'patron';
+    const editor=document.getElementById('vp-text-editor');
+    const texto=editor?.innerText.trim()||'';
+    if(!texto){showToast('⚠️ Este tutorial no tiene patrón escrito','error');return;}
+    exportPatternAsTXT(titulo,texto);
+  });
+  document.getElementById('vp-export-pdf-btn')?.addEventListener('click',()=>{
+    const titulo=document.getElementById('vp-title')?.textContent.replace(/^📝\s*/,'')||'patron';
+    const editor=document.getElementById('vp-text-editor');
+    if(!editor?.innerText.trim()){showToast('⚠️ Este tutorial no tiene patrón escrito','error');return;}
+    exportPatternAsPDF(titulo,editor.innerHTML);
+  });
+  document.getElementById('vp-save-btn')?.addEventListener('click',()=>{
+    const id=document.getElementById('vp-pattern-id')?.value;
+    const p=state.patterns.find(x=>x.id===id);
+    if(!p)return;
+    p.patronEscrito=document.getElementById('vp-text-editor')?.innerHTML.trim()||'';
+    savePatterns(); renderCatalog();
+    closeModal('modal-view-pattern');
+    showToast('✅ Patrón actualizado','success');
+  });
+
+  // CREAR PATRÓN ESCRITO
+  document.getElementById('cp-save-btn')?.addEventListener('click',()=>{
+    const titulo=document.getElementById('cp-title')?.value.trim()||'Patrón sin nombre';
+    const editor=document.getElementById('cp-editor');
+    if(!editor?.innerText.trim()){showToast('⚠️ Escribe el patrón primero','error');return;}
+    const saved=load('mafurafu_created_patterns',[]);
+    saved.unshift({id:uid('cp'),titulo,html:editor.innerHTML,fecha:Date.now()});
+    save('mafurafu_created_patterns',saved);
+    showToast('✅ Patrón guardado en tu navegador','success');
+  });
+  document.getElementById('cp-export-txt-btn')?.addEventListener('click',()=>{
+    const titulo=document.getElementById('cp-title')?.value.trim()||'patron';
+    const texto=document.getElementById('cp-editor')?.innerText.trim()||'';
+    if(!texto){showToast('⚠️ Escribe el patrón primero','error');return;}
+    exportPatternAsTXT(titulo,texto);
+  });
+  document.getElementById('cp-export-pdf-btn')?.addEventListener('click',()=>{
+    const titulo=document.getElementById('cp-title')?.value.trim()||'patron';
+    const editor=document.getElementById('cp-editor');
+    if(!editor?.innerText.trim()){showToast('⚠️ Escribe el patrón primero','error');return;}
+    exportPatternAsPDF(titulo,editor.innerHTML);
+  });
+  document.getElementById('cp-file-input')?.addEventListener('change',e=>{
+    const file=e.target.files?.[0];
+    if(file) openPatternFile(file);
+    e.target.value='';
+  });
+}
+
+function openPatternFile(file) {
+  const extension=file.name.split('.').pop()?.toLowerCase();
+  if(!['txt','md','html','htm'].includes(extension)) {
+    showToast('⚠️ Solo puedes editar archivos TXT, Markdown o HTML','error');
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const editor=document.getElementById('cp-editor');
+    if(!editor)return;
+    if(extension==='html'||extension==='htm') {
+      const doc=new DOMParser().parseFromString(String(reader.result||''),'text/html');
+      doc.querySelectorAll('script,style,iframe,object,embed').forEach(el=>el.remove());
+      doc.querySelectorAll('*').forEach(el=>[...el.attributes].forEach(attr=>{
+        if(attr.name.toLowerCase().startsWith('on'))el.removeAttribute(attr.name);
+      }));
+      editor.innerHTML=doc.body?.innerHTML||'';
+    } else {
+      editor.textContent=String(reader.result||'');
+    }
+    const title=document.getElementById('cp-title');
+    if(title&&!title.value.trim()) title.value=file.name.replace(/\.[^.]+$/,'');
+    showToast(`✅ Archivo "${file.name}" abierto`,'success');
+  };
+  reader.onerror=()=>showToast('❌ No se pudo abrir el archivo','error');
+  reader.readAsText(file);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1356,19 +1862,20 @@ function initModalContext(modalId) {
   if(modalId==='modal-tutorial') {
     // Limpiar form
     ['t-titulo','t-personaje','t-saga','t-url'].forEach(id=>{ const el=document.getElementById(id);if(el)el.value=''; });
+    const patronEditor=document.getElementById('t-patron-editor');
+    if(patronEditor) patronEditor.innerHTML='';
+    renderPatternColorSwatches('t-patron-colors','t-patron-editor');
     document.querySelectorAll('#tut-tag-selector input').forEach(cb=>{cb.checked=false;});
     document.querySelectorAll('#tut-tag-selector label').forEach(l=>l.classList.remove('selected'));
     document.getElementById('tut-color-panel')?.classList.remove('open');
-    const sw=document.getElementById('tut-swatch');
-    const lb=document.getElementById('tut-color-name');
-    if(sw)sw.style.background='';if(lb)lb.textContent='Ninguno';
 
-    // Inicializar widget de color
-    tutColorWidget=colorWidgetSetup({
-      pickerId:'tut-cpicker',hexId:'tut-chex',previewId:'tut-cpreview',
-      nameId:'tut-cname',chipGridId:'tut-color-chips',addBtnId:'tut-btn-add-color',
-      panelId:'tut-color-panel',saveId:'tut-csave',swatchId:'tut-swatch',labelId:'tut-color-name',
-      currentSelected:null,
+    // Inicializar widget de colores múltiples (primarios/secundarios)
+    tutColorWidget=multiColorWidgetSetup({
+      tabsId:'tut-color-tabs',chipGridId:'tut-color-chips',addBtnId:'tut-btn-add-color',
+      panelId:'tut-color-panel',pickerId:'tut-cpicker',hexId:'tut-chex',previewId:'tut-cpreview',
+      nameId:'tut-cname',saveId:'tut-csave',summaryId:'tut-selected-summary',
+      countPrimarioId:'tut-count-primario',countSecundarioId:'tut-count-secundario',
+      initial:[],
     });
 
     // Descargador
@@ -1411,6 +1918,11 @@ function initModalContext(modalId) {
     });
   }
 
+  if(modalId==='modal-material') {
+    ['m-nombre','m-cantidad','m-notas'].forEach(id=>{ const el=document.getElementById(id);if(el)el.value=''; });
+    const cat=document.getElementById('m-categoria'); if(cat) cat.selectedIndex=0;
+  }
+
   if(modalId==='modal-proyecto') {
     ['p-nombre','p-cliente','p-metros','p-costo-material','p-horas','p-notas'].forEach(id=>{ const el=document.getElementById(id);if(el)el.value=''; });
     document.querySelectorAll('#proj-tag-selector input').forEach(cb=>{cb.checked=false;});
@@ -1432,7 +1944,7 @@ function renderColorSlots(n) {
   for(let i=0;i<n;i++){
     const div=document.createElement('div');
     div.className='project-color-slot';
-    div.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    div.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap';
     const dot=document.createElement('span');
     dot.className='slot-color-dot';
     dot.style.cssText='width:18px;height:18px;border-radius:50%;background:#ddd;border:1.5px solid rgba(0,0,0,.1);flex-shrink:0';
@@ -1442,7 +1954,7 @@ function renderColorSlots(n) {
     lbl.textContent='Ninguno';
     const sel=document.createElement('select');
     sel.className='form-select';
-    sel.style.cssText='flex:1';
+    sel.style.cssText='flex:1;min-width:120px';
     sel.innerHTML=`<option value="">— elige color ${i+1} —</option>`+allColors().map(c=>`<option value="${c.name}" data-hex="${c.hex}">${c.name}</option>`).join('');
     sel.addEventListener('change',()=>{
       const opt=sel.selectedOptions[0];
@@ -1450,7 +1962,22 @@ function renderColorSlots(n) {
       dot.style.background=hex;
       lbl.textContent=opt?.value||'Ninguno';
     });
-    div.appendChild(dot);div.appendChild(lbl);div.appendChild(sel);
+    // Toggle Primario / Secundario
+    const typeToggle=document.createElement('div');
+    typeToggle.className='slot-type-toggle';
+    const btnP=document.createElement('button');
+    btnP.type='button'; btnP.className='slot-type-btn active'; btnP.dataset.type='primario'; btnP.textContent='Primario';
+    const btnS=document.createElement('button');
+    btnS.type='button'; btnS.className='slot-type-btn'; btnS.dataset.type='secundario'; btnS.textContent='Secundario';
+    const selectType=(btn)=>{
+      typeToggle.querySelectorAll('.slot-type-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    btnP.addEventListener('click',()=>selectType(btnP));
+    btnS.addEventListener('click',()=>selectType(btnS));
+    typeToggle.appendChild(btnP); typeToggle.appendChild(btnS);
+
+    div.appendChild(dot);div.appendChild(lbl);div.appendChild(sel);div.appendChild(typeToggle);
     container.appendChild(div);
   }
 }
@@ -1458,6 +1985,179 @@ function renderColorSlots(n) {
 function updateClientsDatalist() {
   const dl=document.getElementById('clients-datalist');
   if(dl) dl.innerHTML=state.clients.map(c=>`<option value="${escHtml(c.nombre)}">`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MÓDULO: PATRONES ESCRITOS (guardar como TXT / PDF)
+═══════════════════════════════════════════════════════════ */
+function safeFileName(name) {
+  return (name||'patron').trim().replace(/[\\/:*?"<>|]+/g,'-').slice(0,60)||'patron';
+}
+
+function exportPatternAsTXT(titulo,texto) {
+  const blob=new Blob([`${titulo}\n${'='.repeat(titulo.length)}\n\n${texto}`],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`${safeFileName(titulo)}.txt`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast('📝 Patrón guardado como TXT','success');
+}
+
+// Convierte un color CSS ("#rrggbb" o "rgb(r,g,b)") en [r,g,b]
+function parseCssColor(str) {
+  if(!str) return [30,20,50];
+  str=String(str).trim();
+  if(str.startsWith('#')) {
+    let h=str.slice(1);
+    if(h.length===3) h=h.split('').map(c=>c+c).join('');
+    const num=parseInt(h,16);
+    return [(num>>16)&255,(num>>8)&255,num&255];
+  }
+  const m=str.match(/rgba?\(([^)]+)\)/);
+  if(m) {
+    const parts=m[1].split(',').map(s=>parseFloat(s.trim()));
+    return [parts[0]||0,parts[1]||0,parts[2]||0];
+  }
+  return [30,20,50];
+}
+
+// Recorre el HTML del editor y lo convierte en líneas de
+// "runs" (fragmentos de texto con su color/negrita/subrayado),
+// para poder dibujarlas con colores en el PDF.
+function extractRichRuns(html) {
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html||'';
+  const lines=[[]];
+  function pushLine(){ lines.push([]); }
+  function walk(node,color,bold,underline){
+    node.childNodes.forEach(child=>{
+      if(child.nodeType===3) {
+        if(child.textContent) lines[lines.length-1].push({text:child.textContent,color,bold,underline});
+      } else if(child.nodeType===1) {
+        const tag=child.tagName;
+        if(tag==='BR'){ pushLine(); return; }
+        let c2=color, b2=bold, u2=underline;
+        if(child.style&&child.style.color) c2=child.style.color;
+        if(tag==='B'||tag==='STRONG'||(child.style&&child.style.fontWeight==='bold')) b2=true;
+        if(tag==='U'||(child.style&&/underline/.test(child.style.textDecoration||''))) u2=true;
+        const isBlock=(tag==='DIV'||tag==='P');
+        if(isBlock&&lines[lines.length-1].length) pushLine();
+        walk(child,c2,b2,u2);
+        if(isBlock) pushLine();
+      }
+    });
+  }
+  walk(tmp,null,false,false);
+  while(lines.length>1&&!lines[lines.length-1].length) lines.pop();
+  return lines;
+}
+
+function exportPatternAsPDF(titulo,html) {
+  const JsPDFCtor=window.jspdf&&window.jspdf.jsPDF;
+  if(!JsPDFCtor) { showToast('⚠️ No se pudo cargar el generador de PDF','error'); return; }
+  const doc=new JsPDFCtor({ unit:'pt', format:'a4' });
+  const marginX=48, marginY=56, maxWidth=500;
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(30,20,50);
+  const titleLines=doc.splitTextToSize(titulo,maxWidth);
+  doc.text(titleLines,marginX,marginY);
+  let y=marginY+titleLines.length*20+14, x=marginX;
+  const lineHeight=15, pageHeight=doc.internal.pageSize.getHeight();
+  doc.setFontSize(11);
+  extractRichRuns(html).forEach(runs=>{
+    if(!runs.length){ y+=lineHeight; return; }
+    if(y>pageHeight-marginY){ doc.addPage(); y=marginY; }
+    x=marginX;
+    runs.forEach(run=>{
+      run.text.split(/(\s+)/).forEach(word=>{
+        if(!word)return;
+        doc.setFont('helvetica',run.bold?'bold':'normal');
+        const w=doc.getTextWidth(word);
+        if(x+w>marginX+maxWidth&&word.trim()){ y+=lineHeight; x=marginX; if(y>pageHeight-marginY){doc.addPage();y=marginY;} }
+        const [r,g,b]=parseCssColor(run.color);
+        doc.setTextColor(r,g,b);
+        doc.text(word,x,y);
+        if(run.underline) doc.line(x,y+2,x+w,y+2);
+        x+=w;
+      });
+    });
+    y+=lineHeight;
+  });
+  doc.save(`${safeFileName(titulo)}.pdf`);
+  showToast('📄 Patrón guardado como PDF (con colores)','success');
+}
+
+// Barra de herramientas del editor de patrón escrito: negrita,
+// subrayado y colores de texto (para marcar cambios de estambre)
+function setupPatternToolbars() {
+  document.querySelectorAll('.pattern-toolbar').forEach(tb=>{
+    if(tb.dataset.bound)return;
+    tb.dataset.bound='1';
+    const targetId=tb.dataset.target;
+    // Evita que el editor pierda la selección de texto al hacer clic
+    // en un botón de la barra
+    tb.addEventListener('mousedown',e=>{
+      if(e.target.closest('.pt-btn,.pt-color,.pt-color-dyn,.pt-color-custom')) e.preventDefault();
+    });
+    tb.querySelectorAll('.pt-btn').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const editor=document.getElementById(targetId);
+        if(!editor)return;
+        editor.focus();
+        document.execCommand(b.dataset.cmd,false,null);
+      });
+    });
+    tb.addEventListener('click',e=>{
+      const b=e.target.closest('.pt-color');
+      if(!b)return;
+        const editor=document.getElementById(targetId);
+        if(!editor)return;
+        editor.focus();
+        document.execCommand('styleWithCSS',true,null);
+        document.execCommand('foreColor',false,b.dataset.color);
+    });
+    const custom=tb.querySelector('.pt-color-custom');
+    if(custom) {
+      custom.addEventListener('input',()=>{
+        const editor=document.getElementById(targetId);
+        if(!editor)return;
+        editor.focus();
+        document.execCommand('styleWithCSS',true,null);
+        document.execCommand('foreColor',false,custom.value);
+      });
+    }
+  });
+}
+
+// Rellena la barra de patrón con los colores YA REGISTRADOS en la
+// app (los predefinidos + los que agregaste en "Gestión de colores"),
+// para marcar el cambio de estambre con el color real que usas.
+function renderPatternColorSwatches(containerId,targetId) {
+  const box=document.getElementById(containerId);
+  if(!box)return;
+  box.innerHTML=allColors().map(c=>
+    `<button type="button" class="pt-color-dyn" data-color="${c.hex}" title="${escHtml(c.name)}" style="background:${c.hex}"></button>`
+  ).join('');
+  box.querySelectorAll('.pt-color-dyn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const editor=document.getElementById(targetId);
+      if(!editor)return;
+      editor.focus();
+      document.execCommand('styleWithCSS',true,null);
+      document.execCommand('foreColor',false,b.dataset.color);
+    });
+  });
+}
+
+// Modal para ver/editar/exportar el patrón escrito guardado en un tutorial
+function openViewPattern(id) {
+  const p=state.patterns.find(x=>x.id===id);
+  if(!p)return;
+  document.getElementById('vp-pattern-id').value=id;
+  document.getElementById('vp-title').textContent=`📝 ${p.titulo}`;
+  document.getElementById('vp-text-editor').innerHTML=p.patronEscrito||'';
+  renderPatternColorSwatches('vp-text-colors','vp-text-editor');
+  openModal('modal-view-pattern');
 }
 
 /* ═══════════════════════════════════════════════════════════

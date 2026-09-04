@@ -9,6 +9,8 @@
   <!-- FUENTES CARGADAS: Nunito · Inter · Pacifico · Playfair Display · Quicksand -->
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&family=Pacifico&family=Playfair+Display:wght@700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
+  <!-- Librería para exportar patrones escritos a PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="app-layout">
@@ -38,6 +40,18 @@
       <button class="nav-item" data-page="estambres">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
         Estambres
+      </button>
+      <button class="nav-item" data-page="materiales">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2.41 12.4A2 2 0 0 1 2 11V4a2 2 0 0 1 2-2h7a2 2 0 0 1 1.41.59l8.18 8.18a2 2 0 0 1 0 2.83z"/><line x1="7.5" y1="7.5" x2="7.51" y2="7.5"/></svg>
+        Materiales
+      </button>
+      <button class="nav-item" data-page="patrones-subidos">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Patrones subidos
+      </button>
+      <button class="nav-item" data-page="crear-patrones">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Crear patrones
       </button>
       <div class="nav-group-label" style="margin-top:var(--space-3)">Negocio</div>
       <button class="nav-item" data-page="clientes">
@@ -251,6 +265,64 @@
         <div class="yarn-inventory-grid" id="yarn-inventory-grid"></div>
       </section>
 
+      <!-- ═══ PÁGINA: MATERIALES (no solo estambre) ═══ -->
+      <section class="page-section" id="page-materiales">
+        <div class="section-header">
+          <h2 class="section-title">📦 Otros materiales</h2>
+          <span class="section-count" id="material-count"></span>
+        </div>
+        <p class="form-hint" style="margin-bottom:var(--space-3)">Ojitos, rellenos, telas, agujas, broches… todo lo que no sea estambre.</p>
+        <div class="yarn-inventory-grid" id="material-inventory-grid"></div>
+      </section>
+
+      <!-- ═══ PÁGINA: PATRONES SUBIDOS (archivos en cualquier formato) ═══ -->
+      <section class="page-section" id="page-patrones-subidos">
+        <div class="section-header">
+          <h2 class="section-title">📤 Patrones subidos</h2>
+          <span class="section-count" id="upload-count"></span>
+        </div>
+        <label class="upload-dropzone" id="upload-dropzone" for="pattern-file-input">
+          <svg width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <strong>Toca para subir un archivo</strong>
+          <span class="form-hint">PDF, Word, TXT, imágenes (JPG/PNG) — cualquier formato</span>
+          <input type="file" id="pattern-file-input" multiple hidden/>
+        </label>
+        <div class="uploaded-files-grid" id="uploaded-files-grid"></div>
+      </section>
+
+      <!-- ═══ PÁGINA: CREAR PATRONES ═══ -->
+      <section class="page-section" id="page-crear-patrones">
+        <div class="section-header">
+          <h2 class="section-title">📝 Crear patrón</h2>
+        </div>
+        <div class="create-pattern-panel">
+          <label class="form-label" for="cp-title">Nombre del patrón</label>
+          <input class="form-input" type="text" id="cp-title" placeholder="Ej. Amigurumi paso a paso" maxlength="80"/>
+          <div class="create-pattern-file-row">
+            <label class="btn-secondary" for="cp-file-input">📂 Abrir archivo</label>
+            <input type="file" id="cp-file-input" accept=".txt,.md,.html,.htm,text/plain,text/markdown,text/html" hidden/>
+            <span class="form-hint">Puedes abrir TXT, Markdown o HTML para editarlo.</span>
+          </div>
+          <label class="form-label create-pattern-label" for="cp-editor">Patrón escrito</label>
+          <div class="pattern-toolbar" data-target="cp-editor">
+            <button type="button" class="pt-btn" data-cmd="bold" title="Negrita"><b>N</b></button>
+            <button type="button" class="pt-btn" data-cmd="underline" title="Subrayado"><u>S</u></button>
+            <span class="pt-sep"></span>
+            <span class="pt-label">Color del cambio:</span>
+            <div class="pt-colors" id="cp-colors"></div>
+            <input type="color" class="pt-color-custom" id="cp-color-picker" title="Otro color"/>
+            <button type="button" class="pt-btn pt-clear" data-cmd="removeFormat" title="Quitar formato">✕</button>
+          </div>
+          <div class="form-textarea pattern-editor create-pattern-editor" id="cp-editor" contenteditable="true"
+            data-placeholder="Escribe aquí tu patrón. Selecciona un texto y elige un color para marcar cada cambio de estambre."></div>
+          <div class="written-pattern-actions">
+            <button type="button" class="btn-primary" id="cp-save-btn">Guardar patrón</button>
+            <button type="button" class="btn-export-txt" id="cp-export-txt-btn">📝 Guardar como TXT</button>
+            <button type="button" class="btn-export-pdf" id="cp-export-pdf-btn">📄 Guardar como PDF</button>
+          </div>
+        </div>
+      </section>
+
       <!-- ═══ PÁGINA: CLIENTES ═══ -->
       <section class="page-section" id="page-clientes">
         <div class="section-header">
@@ -281,6 +353,17 @@
                 <div class="color-theme-row" id="color-themes-row"></div>
               </div>
             </div>
+          </div>
+          <!-- Gestión de colores -->
+          <div class="customize-card">
+            <h3>🎨 Gestión de colores</h3>
+            <p class="form-hint" style="margin-top:-2px">Agrega aquí todos los colores de estambre que necesites. Estarán disponibles al instante en tutoriales, proyectos y estambres.</p>
+            <div class="color-manage-add-row">
+              <input type="color" id="cm-new-hex" value="#ff69b4" title="Elegir color"/>
+              <input class="form-input" type="text" id="cm-new-name" placeholder="Nombre del color (ej. Coral)" maxlength="30"/>
+              <button class="btn-primary" id="cm-add-btn">+ Agregar color</button>
+            </div>
+            <div class="color-manage-grid" id="color-manage-grid"></div>
           </div>
           <!-- Tipografía -->
           <div class="customize-card">
@@ -378,9 +461,14 @@
         <input class="form-input" type="text" id="t-saga" placeholder="Ej. Pokémon" maxlength="50"/>
       </div>
     </div>
-    <!-- COLOR -->
+    <!-- COLOR (selección múltiple, dividido en primarios/secundarios) -->
     <div class="form-group">
-      <label class="form-label">Color de estambre <span class="req">*</span></label>
+      <label class="form-label">Colores de estambre <span class="req">*</span></label>
+      <div class="color-type-tabs" id="tut-color-tabs">
+        <button type="button" class="color-type-tab type-primario active" data-type="primario">🎯 Primarios <span class="tab-count" id="tut-count-primario">0</span></button>
+        <button type="button" class="color-type-tab type-secundario" data-type="secundario">🌈 Secundarios <span class="tab-count" id="tut-count-secundario">0</span></button>
+      </div>
+      <p class="form-hint">Elige la pestaña (primario o secundario) y toca los colores que quieras usar en cada una. Puedes seleccionar varios colores.</p>
       <div class="color-chips-grid" id="tut-color-chips"></div>
       <button type="button" class="btn-add-color" id="tut-btn-add-color">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -403,10 +491,7 @@
           <button type="button" class="btn-save-custom-color" id="tut-csave">Guardar y usar</button>
         </div>
       </div>
-      <div class="selected-color-row" id="tut-selected-row">
-        <div class="color-preview-swatch" id="tut-swatch"></div>
-        <span class="selected-color-name" id="tut-color-name">Ninguno</span>
-      </div>
+      <div class="selected-colors-summary" id="tut-selected-summary"></div>
     </div>
     <!-- ENLACE -->
     <div class="form-group">
@@ -432,6 +517,26 @@
         <button type="button" class="btn-primary" id="tut-download-btn" style="font-size:var(--fs-xs)">⬇️ Descargar video</button>
       </div>
       <div id="tut-download-result" style="margin-top:var(--space-2);font-size:var(--fs-xs);color:var(--color-text-muted)"></div>
+    </div>
+    <!-- PATRÓN ESCRITO (con color para marcar cambios de estambre) -->
+    <div class="form-group">
+      <label class="form-label">📝 Patrón escrito (opcional)</label>
+      <div class="pattern-toolbar" data-target="t-patron-editor">
+        <button type="button" class="pt-btn" data-cmd="bold" title="Negrita"><b>N</b></button>
+        <button type="button" class="pt-btn" data-cmd="underline" title="Subrayado"><u>S</u></button>
+        <span class="pt-sep"></span>
+        <span class="pt-label">Cambio de color:</span>
+        <div class="pt-colors" id="t-patron-colors"></div>
+        <input type="color" class="pt-color-custom" id="t-patron-color-picker" title="Otro color"/>
+        <button type="button" class="pt-btn pt-clear" data-cmd="removeFormat" title="Quitar formato">✕</button>
+      </div>
+      <div class="form-textarea pattern-editor" id="t-patron-editor" contenteditable="true"
+        data-placeholder="Escribe el patrón punto por punto. Selecciona un fragmento de texto y toca un color para marcar los cambios de estambre."></div>
+      <div class="written-pattern-actions">
+        <button type="button" class="btn-export-txt" id="tut-export-txt-btn">📝 Guardar como TXT</button>
+        <button type="button" class="btn-export-pdf" id="tut-export-pdf-btn">📄 Guardar como PDF</button>
+      </div>
+      <p class="form-hint">El patrón se guarda junto al tutorial (con los colores marcados) y también puedes exportarlo como archivo TXT o PDF en cualquier momento.</p>
     </div>
     <!-- ETIQUETAS (generadas dinámicamente por JS) -->
     <div class="form-group">
@@ -502,6 +607,7 @@
     <!-- Colores del proyecto -->
     <div class="form-group">
       <label class="form-label">Colores a usar</label>
+      <p class="form-hint">Marca cada color como <strong>Primario</strong> o <strong>Secundario</strong> según su uso en el proyecto.</p>
       <div id="p-colors-slots"></div>
     </div>
     <!-- Materiales extra -->
@@ -598,6 +704,45 @@
   </div>
 </div>
 
+<!-- MODAL: MATERIAL (ojitos, relleno, telas, etc. — no estambre) -->
+<div class="modal-overlay" id="modal-material">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">📦 Agregar material</h2>
+      <button class="modal-close" data-modal="modal-material">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre <span class="req">*</span></label>
+      <input class="form-input" type="text" id="m-nombre" placeholder="Ej. Ojitos de seguridad 10mm"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <select class="form-select" id="m-categoria">
+          <option value="Ojitos">👀 Ojitos</option>
+          <option value="Relleno">☁️ Relleno</option>
+          <option value="Tela">🧵 Tela</option>
+          <option value="Agujas/ganchos">🪡 Agujas / ganchos</option>
+          <option value="Broches/accesorios">🔘 Broches / accesorios</option>
+          <option value="Otro">📦 Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cantidad</label>
+        <input class="form-input" type="number" id="m-cantidad" placeholder="1" min="0"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas</label>
+      <input class="form-input" type="text" id="m-notas" placeholder="Opcional: proveedor, tamaño, color…"/>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" data-modal="modal-material">Cancelar</button>
+      <button class="btn-primary" id="save-material-btn">Guardar material</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: NUEVO CLIENTE -->
 <div class="modal-overlay" id="modal-cliente">
   <div class="modal-box">
@@ -679,6 +824,38 @@
     <div class="modal-actions">
       <button type="button" class="btn-secondary modal-close" data-modal="modal-edit-link">Cancelar</button>
       <button type="button" class="btn-primary" id="save-edit-link-btn">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VER / EXPORTAR PATRÓN ESCRITO -->
+<div class="modal-overlay" id="modal-view-pattern">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title" id="vp-title">📝 Patrón escrito</h2>
+      <button class="modal-close" data-modal="modal-view-pattern">✕</button>
+    </div>
+    <input type="hidden" id="vp-pattern-id"/>
+    <div class="form-group">
+      <div class="pattern-toolbar" data-target="vp-text-editor">
+        <button type="button" class="pt-btn" data-cmd="bold" title="Negrita"><b>N</b></button>
+        <button type="button" class="pt-btn" data-cmd="underline" title="Subrayado"><u>S</u></button>
+        <span class="pt-sep"></span>
+        <span class="pt-label">Cambio de color:</span>
+        <div class="pt-colors" id="vp-text-colors"></div>
+        <input type="color" class="pt-color-custom" id="vp-color-picker" title="Otro color"/>
+        <button type="button" class="pt-btn pt-clear" data-cmd="removeFormat" title="Quitar formato">✕</button>
+      </div>
+      <div class="form-textarea pattern-editor" id="vp-text-editor" contenteditable="true" style="min-height:220px"
+        data-placeholder="Sin patrón escrito todavía."></div>
+    </div>
+    <div class="written-pattern-actions">
+      <button type="button" class="btn-export-txt" id="vp-export-txt-btn">📝 Guardar como TXT</button>
+      <button type="button" class="btn-export-pdf" id="vp-export-pdf-btn">📄 Guardar como PDF</button>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" data-modal="modal-view-pattern">Cerrar</button>
+      <button class="btn-primary" id="vp-save-btn">Guardar cambios</button>
     </div>
   </div>
 </div>

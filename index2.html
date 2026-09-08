@@ -9,7 +9,11 @@
   <!-- FUENTES CARGADAS: Nunito · Inter · Pacifico · Playfair Display · Quicksand -->
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&family=Pacifico&family=Playfair+Display:wght@700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
-  <!-- Librería para exportar patrones escritos a PDF -->
+  <!-- Librerías para importar y exportar patrones escritos -->
+  <script>
+    window.pdfjsReady = import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -83,8 +87,12 @@
           <button class="backup-menu-item" data-export-section="projects">🧶 Solo proyectos</button>
           <button class="backup-menu-item" data-export-section="yarns">🎨 Solo estambres</button>
           <button class="backup-menu-item" data-export-section="clients">👥 Solo clientes</button>
+          <button class="backup-menu-item" data-export-section="materials">📦 Solo materiales</button>
+          <button class="backup-menu-item" data-export-section="uploads">📤 Solo patrones subidos</button>
+          <button class="backup-menu-item" data-export-section="categories">🏷️ Solo categorías</button>
           <div class="backup-menu-divider"></div>
           <button class="backup-menu-item" id="import-btn">📂 Importar JSON</button>
+          <input type="file" id="import-file-input" accept="application/json,.json" hidden/>
         </div>
       </div>
       <!-- Reproductor flotante -->
@@ -300,8 +308,8 @@
           <input class="form-input" type="text" id="cp-title" placeholder="Ej. Amigurumi paso a paso" maxlength="80"/>
           <div class="create-pattern-file-row">
             <label class="btn-secondary" for="cp-file-input">📂 Abrir archivo</label>
-            <input type="file" id="cp-file-input" accept=".txt,.md,.html,.htm,text/plain,text/markdown,text/html" hidden/>
-            <span class="form-hint">Puedes abrir TXT, Markdown o HTML para editarlo.</span>
+            <input type="file" id="cp-file-input" accept=".txt,.md,.html,.htm,.pdf,.docx,text/plain,text/markdown,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden/>
+            <span class="form-hint">Puedes abrir TXT, Markdown, HTML, PDF o Word (.docx) para editarlo.</span>
           </div>
           <label class="form-label create-pattern-label" for="cp-editor">Patrón escrito</label>
           <div class="pattern-toolbar" data-target="cp-editor">
@@ -412,6 +420,7 @@
 
 <!-- FAB contextual -->
 <button class="fab" id="fab-btn" title="Agregar nuevo" aria-label="Agregar">+</button>
+<div id="toast-container" aria-live="polite"></div>
 
 <!-- ═══════════════════════════════════════════
      REPRODUCTOR FLOTANTE ARRASTRABLE
@@ -575,9 +584,10 @@
 <div class="modal-overlay" id="modal-proyecto">
   <div class="modal-box modal-wide">
     <div class="modal-header">
-      <h2 class="modal-title">🧶 Nuevo proyecto</h2>
+      <h2 class="modal-title" id="proyecto-modal-title">🧶 Nuevo proyecto</h2>
       <button class="modal-close" data-modal="modal-proyecto">✕</button>
     </div>
+    <input type="hidden" id="p-edit-id" value=""/>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Nombre del proyecto <span class="req">*</span></label>
@@ -602,6 +612,20 @@
       <div class="form-group">
         <label class="form-label">Número de colores de estambre</label>
         <input class="form-input" type="number" id="p-num-colors" placeholder="1" min="1" max="20" value="1"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="p-photo-input">Foto de referencia del patrón</label>
+      <div class="project-photo-picker">
+        <label class="project-photo-upload" for="p-photo-input">
+          <span>📷</span>
+          <small>Clic aquí para seleccionar imagen</small>
+        </label>
+        <input type="file" id="p-photo-input" accept="image/*" hidden/>
+        <div class="project-photo-preview" id="p-photo-preview" hidden>
+          <img id="p-photo-preview-img" alt="Vista previa del patrón"/>
+          <button type="button" class="project-photo-remove" id="p-photo-remove" title="Quitar foto" aria-label="Quitar foto">×</button>
+        </div>
       </div>
     </div>
     <!-- Colores del proyecto -->
@@ -643,6 +667,11 @@
           <option value="40">Demasiados det. (+40%)</option>
         </select>
       </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Precio estimado / de venta (MXN, opcional)</label>
+      <input class="form-input" type="number" id="p-precio" placeholder="Se calcula automáticamente si lo dejas vacío" min="0" step="0.01"/>
+      <p class="form-hint">Déjalo vacío para que se calcule solo a partir del material, las horas y el nivel de detalle. Si escribes un valor, ese será el precio mostrado y podrás editarlo después.</p>
     </div>
     <div class="form-group">
       <label class="form-label">Notas / descripción</label>
@@ -778,6 +807,7 @@
       <h2 class="modal-title">🎉 Marcar como terminado</h2>
       <button class="modal-close" data-modal="modal-finish">✕</button>
     </div>
+    <input type="hidden" id="finish-project-id"/>
     <div class="form-group">
       <label class="form-label">Precio final de venta (MXN)</label>
       <input class="form-input" type="number" id="f-precio-real" placeholder="0.00" min="0" step="0.01"/>

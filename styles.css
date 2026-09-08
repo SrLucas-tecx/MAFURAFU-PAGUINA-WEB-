@@ -177,6 +177,47 @@ a { color: inherit; text-decoration: none; }
   position: relative;
 }
 
+.work-timer {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+.work-timer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+}
+.work-timer-status {
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+.work-timer-status.is-running { color: var(--color-success); }
+.work-timer-display {
+  margin: var(--space-2) 0;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-align: center;
+}
+.work-timer-actions { display: flex; gap: var(--space-2); }
+.work-timer-actions button {
+  flex: 1;
+  padding: var(--space-2);
+  font-size: var(--fs-xs);
+}
+.work-timer-start { background: var(--color-accent); }
+.work-timer-reset { background: var(--color-surface); }
+
 .main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .header {
   position: sticky;

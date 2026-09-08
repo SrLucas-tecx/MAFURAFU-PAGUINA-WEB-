@@ -1564,6 +1564,58 @@ function initSidebarMobile() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   MÓDULO: TEMPORIZADOR DE TRABAJO
+   Independiente del resto de la aplicación y sin persistencia.
+═══════════════════════════════════════════════════════════ */
+function initWorkTimer() {
+  const display=document.getElementById('work-timer-display');
+  const startBtn=document.getElementById('work-timer-start');
+  const resetBtn=document.getElementById('work-timer-reset');
+  const status=document.getElementById('work-timer-status');
+  if(!display||!startBtn||!resetBtn||!status)return;
+
+  let elapsedSeconds=0;
+  let timerId=null;
+
+  const formatTime=seconds=>{
+    const hours=Math.floor(seconds/3600).toString().padStart(2,'0');
+    const minutes=Math.floor((seconds%3600)/60).toString().padStart(2,'0');
+    const remaining=(seconds%60).toString().padStart(2,'0');
+    return `${hours}:${minutes}:${remaining}`;
+  };
+
+  const render=()=>{
+    display.textContent=formatTime(elapsedSeconds);
+    const running=timerId!==null;
+    startBtn.textContent=running?'Pausar':'Iniciar';
+    status.textContent=running?'En marcha':'En pausa';
+    status.classList.toggle('is-running',running);
+  };
+
+  startBtn.addEventListener('click',()=>{
+    if(timerId!==null) {
+      clearInterval(timerId);
+      timerId=null;
+    } else {
+      timerId=setInterval(()=>{
+        elapsedSeconds++;
+        render();
+      },1000);
+    }
+    render();
+  });
+
+  resetBtn.addEventListener('click',()=>{
+    if(timerId!==null) clearInterval(timerId);
+    timerId=null;
+    elapsedSeconds=0;
+    render();
+  });
+
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════
    INICIALIZACIÓN DE TODOS LOS EVENTOS
 ═══════════════════════════════════════════════════════════ */
 function initEvents() {
@@ -2403,6 +2455,7 @@ function init() {
   initEvents();
   initFloatPlayer();
   initSidebarMobile();
+  initWorkTimer();
   navigateTo('tutoriales');
   
   // Verificar descargador al iniciar y cada 10s

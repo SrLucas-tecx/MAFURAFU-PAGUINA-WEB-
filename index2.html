@@ -112,24 +112,6 @@
       </div>
     </div>
   </aside>
-  <!-- Botón flotante con ícono de YouTube -->
-<button id="yt-toggle-btn" class="yt-btn" title="Pegar enlace de YouTube">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-  </svg>
-</button>
-
-<!-- Ventana/Pestaña emergente -->
-<div id="yt-modal" class="yt-modal hidden">
-  <div class="yt-modal-content">
-    <h3>Descargar de YouTube</h3>
-    <input type="text" id="yt-url-input" placeholder="Pega el enlace aquí (https://...)">
-    <div class="yt-actions">
-      <button id="yt-download-btn" class="btn-primary">Descargar</button>
-      <button id="yt-close-btn" class="btn-secondary">Cancelar</button>
-    </div>
-  </div>
-</div>
 
   <!-- Overlay para cerrar sidebar en móvil -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -149,11 +131,6 @@
         <div class="search-wrap">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="search" id="search-input" class="search-input" placeholder="Buscar…" autocomplete="off"/>
-        </div>
-        <div class="header-actions">
-          <button class="btn-icon" id="downloader-status-btn" title="Estado del descargador" style="font-size:.7rem;font-weight:700;gap:4px;width:auto;padding:0 10px;">
-            🔴 Descargador
-          </button>
         </div>
       </div>
       <!-- Paleta de colores (solo en tutoriales y proyectos) -->
@@ -528,16 +505,6 @@
       </div>
       <p class="form-hint">YouTube se incrusta automáticamente. Otros tipos se abren en nueva pestaña.</p>
     </div>
-    <!-- DESCARGAR VIDEO -->
-    <div class="form-group" id="tut-download-row" style="display:none">
-      <label class="form-label">⬇️ Descargador</label>
-      <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">
-        <button type="button" class="btn-secondary" id="tut-get-info-btn" style="font-size:var(--fs-xs)">🔍 Obtener info</button>
-        <button type="button" class="btn-secondary" id="tut-transcript-btn" style="font-size:var(--fs-xs)">📝 Transcripción</button>
-        <button type="button" class="btn-primary" id="tut-download-btn" style="font-size:var(--fs-xs)">⬇️ Descargar video</button>
-      </div>
-      <div id="tut-download-result" style="margin-top:var(--space-2);font-size:var(--fs-xs);color:var(--color-text-muted)"></div>
-    </div>
     <!-- PATRÓN ESCRITO (con color para marcar cambios de estambre) -->
     <div class="form-group">
       <label class="form-label">📝 Patrón escrito (opcional)</label>
@@ -899,15 +866,6 @@
       <button class="btn-primary" id="vp-save-btn">Guardar cambios</button>
     </div>
   </div>
-</div>
-<!-- Fila de descarga por Python (se muestra solo si el tipo es youtube) -->
-<div id="tut-download-row" style="display: none; margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--color-border);">
-  <label style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; display: block;">⚡ Herramientas de descarga local</label>
-  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-    <button type="button" class="btn-secondary" id="tut-get-info-btn" style="font-size: 0.8rem;">🔍 Info video</button>
-    <button type="button" class="btn-primary" id="tut-download-btn" style="font-size: 0.8rem;">⬇️ Descargar MP4</button>
-  </div>
-  <div id="tut-download-result" style="margin-top: 8px; font-size: 0.8rem; color: var(--color-text-muted);"></div>
 </div>
 
 <script src="app.js"></script>

@@ -52,10 +52,6 @@ function tagLabel(id) {
   const custom=(customTags||[]).find(t=>t.id===id);
   return builtIn[id]||(custom?`${custom.emoji} ${custom.name}`:id);
 }
-
-// EDITAR AQUÍ: URL base del servidor descargador Python
-const DOWNLOADER_URL = 'http://localhost:5050';
-
 // Claves de localStorage
 const SK = {
   patterns:  'mafurafu_patterns',
@@ -102,7 +98,6 @@ let state = {
     yarnLevel:      100,
     detailPct:      30,
   },
-  downloaderOnline: false,
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -1039,32 +1034,10 @@ function openFinishModal(id) {
   const p=state.projects.find(x=>x.id===id);
   if(!p)return;
   document.getElementById('finish-project-id').value=id;
-  document.getElementById('fin-horas').value=p.horas||'';
-  document.getElementById('fin-material').value=p.costoMaterial||'';
-  document.getElementById('fin-venta').value='';
-  updateFinishResult();
+  document.getElementById('f-precio-real').value=p.soldPrice||p.suggestedPrice||'';
+  document.getElementById('f-tiempo-real').value=p.tiempoReal||'';
+  document.getElementById('f-notas').value=p.notasFinales||'';
   openModal('modal-finish');
-}
-
-function updateFinishResult() {
-  const horas=Number(document.getElementById('fin-horas')?.value||0);
-  const mat=Number(document.getElementById('fin-material')?.value||0);
-  const venta=Number(document.getElementById('fin-venta')?.value||0);
-  const hr=state.settings.hourRate;
-  const pct=30;
-  const labor=horas*hr;
-  const base=mat+labor;
-  const sugerido=base+(base*pct/100);
-  const gain=venta?venta-base:sugerido-base;
-  const box=document.getElementById('fin-breakdown');
-  if(box) box.innerHTML=`
-    <div class="quote-breakdown">
-      <div class="quote-line"><span>Material real</span><span>${formatMXN(mat)}</span></div>
-      <div class="quote-line"><span>Mano de obra (${horas}h × $${hr})</span><span>${formatMXN(labor)}</span></div>
-      <div class="quote-line"><span>Costo total</span><span>${formatMXN(base)}</span></div>
-      <div class="quote-line total"><span>Precio sugerido (+30%)</span><span>${formatMXN(sugerido)}</span></div>
-      ${venta?`<div class="quote-line"><span>Ganancia real</span><span class="price-gain ${gain<0?'negative':''}">${formatMXN(gain)}</span></div>`:''}
-    </div>`;
 }
 /* ═══════════════════════════════════════════════════════════
    MÓDULO: COTIZACIONES
@@ -1414,37 +1387,6 @@ function openLightbox(src) {
 function closeLightbox() {
   const lb=document.getElementById('lightbox');
   if(lb)lb.classList.remove('open');
-}
-
-/* ═══════════════════════════════════════════════════════════
-   MÓDULO: DESCARGADOR PYTHON
-═══════════════════════════════════════════════════════════ */
-async function checkDownloader() {
-  const btn=document.getElementById('downloader-status-btn');
-  try {
-    const r=await fetch(`${DOWNLOADER_URL}/ping`,{signal:AbortSignal.timeout(2000)});
-    const d=await r.json();
-    state.downloaderOnline=d.ok;
-  } catch {
-    state.downloaderOnline=false;
-  }
-  if(btn){
-    btn.textContent=state.downloaderOnline?'🟢 Descargador':'🔴 Descargador';
-    btn.title=state.downloaderOnline?'Descargador activo: haz clic para ver info':'Descargador inactivo. Ejecuta downloader.py';
-  }
-}
-
-async function downloaderGetInfo(url) {
-  const r=await fetch(`${DOWNLOADER_URL}/info?url=${encodeURIComponent(url)}`);
-  return r.json();
-}
-async function downloaderDownload(url) {
-  const r=await fetch(`${DOWNLOADER_URL}/download?url=${encodeURIComponent(url)}`);
-  return r.json();
-}
-async function downloaderTranscript(url) {
-  const r=await fetch(`${DOWNLOADER_URL}/transcript?url=${encodeURIComponent(url)}`);
-  return r.json();
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1819,23 +1761,17 @@ function initEvents() {
     const id=document.getElementById('finish-project-id').value;
     const p=state.projects.find(x=>x.id===id);
     if(!p)return;
-    const horas=Number(document.getElementById('fin-horas').value||0);
-    const mat=Number(document.getElementById('fin-material').value||0);
-    const venta=Number(document.getElementById('fin-venta').value||0);
-    const hr=state.settings.hourRate;
-    const base=mat+horas*hr;
-    const sugerido=base+(base*0.3);
-    p.horas=horas;p.costoMaterial=mat;p.totalCost=base;
-    p.suggestedPrice=sugerido;
-    if(venta){p.soldPrice=venta;}
+    const precio=Number(document.getElementById('f-precio-real')?.value||0);
+    const tiempoReal=document.getElementById('f-tiempo-real')?.value.trim()||'';
+    const notasFinales=document.getElementById('f-notas')?.value.trim()||'';
+    if(precio>0) p.soldPrice=precio;
+    p.tiempoReal=tiempoReal;
+    p.notasFinales=notasFinales;
     p.estado=p.estado==='terminado'?'entregado':'terminado';
     p.fechaFin=Date.now();
     saveProjects();renderProjects();closeModal('modal-finish');
     showToast(`✅ Proyecto marcado como ${p.estado}`,'success');
   });
-  document.getElementById('fin-horas')?.addEventListener('input',updateFinishResult);
-  document.getElementById('fin-material')?.addEventListener('input',updateFinishResult);
-  document.getElementById('fin-venta')?.addEventListener('input',updateFinishResult);
 
   // COTIZADOR
   document.getElementById('calc-quote-btn')?.addEventListener('click',calcQuote);
@@ -1894,12 +1830,6 @@ function initEvents() {
   // LIGHTBOX
   document.getElementById('lightbox-close')?.addEventListener('click',closeLightbox);
   document.getElementById('lightbox')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeLightbox();});
-
-  // DOWNLOADER STATUS
-  document.getElementById('downloader-status-btn')?.addEventListener('click',()=>{
-    if(!state.downloaderOnline) showToast('Ejecuta: python downloader.py','warning');
-    else showToast('🟢 Descargador activo','success');
-  });
 
   // Etiquetas tag selector (tutoriales y proyectos)
   document.querySelectorAll('#tut-tag-selector label, #proj-tag-selector label').forEach(lbl=>{
@@ -2084,36 +2014,6 @@ function initModalContext(modalId) {
       nameId:'tut-cname',saveId:'tut-csave',summaryId:'tut-selected-summary',
       countPrimarioId:'tut-count-primario',countSecundarioId:'tut-count-secundario',
       initial:[],
-    });
-
-    // Descargador
-    document.getElementById('t-link-type')?.addEventListener('change',e=>{
-      const row=document.getElementById('tut-download-row');
-      if(row)row.style.display=(e.target.value==='youtube'&&state.downloaderOnline)?'block':'none';
-    });
-    document.getElementById('tut-get-info-btn')?.addEventListener('click',async()=>{
-      const url=document.getElementById('t-url').value.trim();
-      if(!url)return;
-      const res=document.getElementById('tut-download-result');
-      if(res)res.textContent='Cargando info…';
-      const info=await downloaderGetInfo(url);
-      if(res)res.textContent=info.ok?`📹 ${info.title} · ${info.platform} · ${Math.round(info.duration/60)} min`:`❌ ${info.error}`;
-    });
-    document.getElementById('tut-transcript-btn')?.addEventListener('click',async()=>{
-      const url=document.getElementById('t-url').value.trim();
-      if(!url)return;
-      const res=document.getElementById('tut-download-result');
-      if(res)res.textContent='Obteniendo transcripción…';
-      const t=await downloaderTranscript(url);
-      if(res)res.textContent=t.ok?`📝 ${t.transcript.slice(0,300)}…`:`❌ ${t.error}`;
-    });
-    document.getElementById('tut-download-btn')?.addEventListener('click',async()=>{
-      const url=document.getElementById('t-url').value.trim();
-      if(!url)return;
-      const res=document.getElementById('tut-download-result');
-      if(res)res.textContent='⬇️ Descargando… (puede tomar un momento)';
-      const d=await downloaderDownload(url);
-      if(res)res.textContent=d.ok?`✅ Guardado: ${d.filename} (${d.size_mb} MB)`:`❌ ${d.error}`;
     });
   }
 
@@ -2457,10 +2357,6 @@ function init() {
   initSidebarMobile();
   initWorkTimer();
   navigateTo('tutoriales');
-  
-  // Verificar descargador al iniciar y cada 10s
-  updateDownloaderStatus();
-  setInterval(updateDownloaderStatus, 10000);
 
   // Botón hamburguesa visible en móvil
   if(window.innerWidth <= 768) {
@@ -2471,106 +2367,6 @@ function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 
-// Variable global del estado de conexión
-let isDownloaderOnline = false;
-
-// Verificación del servidor local (http://localhost:5050)
-async function updateDownloaderStatus() {
-  const btn = document.getElementById('downloader-status-btn');
-  if (!btn) return;
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch('http://localhost:5050/ping', { signal: controller.signal });
-    clearTimeout(timeoutId);
-    
-    const data = await res.json();
-
-    if (data.ok) {
-      isDownloaderOnline = true;
-      btn.innerHTML = '🟢 Descargador';
-      btn.style.color = 'var(--color-success, #4CAF50)';
-      btn.title = 'Servidor activo (http://localhost:5050)';
-    } else {
-      throw new Error();
-    }
-  } catch (err) {
-    isDownloaderOnline = false;
-    btn.innerHTML = '🔴 Descargador';
-    btn.style.color = 'var(--color-danger, #FF5252)';
-    btn.title = 'Servidor desconectado. Ejecuta: python downloader.py';
-  }
-}
-
-// Evento al hacer clic en el botón del header
-document.getElementById('downloader-status-btn')?.addEventListener('click', async () => {
-  if (!isDownloaderOnline) {
-    alert('⚠️ El servidor de descargas no está activo.\n\nAbre tu terminal en la carpeta del proyecto y ejecuta:\npython downloader.py');
-    return;
-  }
-
-  try {
-    const res = await fetch('http://localhost:5050/downloads');
-    const data = await res.json();
-
-    if (data.ok && data.files.length > 0) {
-      const lista = data.files.slice(0, 10).map(f => `• ${f.name} (${f.size_mb} MB)`).join('\n');
-      alert(`📁 Últimos videos descargados en MAFURAFU_Videos:\n\n${lista}`);
-    } else {
-      alert('🟢 Servidor activo.\nLa carpeta MAFURAFU_Videos aún no tiene descargas.');
-    }
-  } catch (err) {
-    alert('Error al consultar los archivos del servidor local.');
-  }
-});
-
-/* ═══ MÓDULO: YouTube Downloader ═══ */
-document.addEventListener('DOMContentLoaded', () => {
-  const ytBtn = document.getElementById('yt-toggle-btn');
-  const ytModal = document.getElementById('yt-modal');
-  const ytCloseBtn = document.getElementById('yt-close-btn');
-  const ytDownloadBtn = document.getElementById('yt-download-btn');
-  const ytUrlInput = document.getElementById('yt-url-input');
-
-  if (ytBtn && ytModal) {
-    ytBtn.addEventListener('click', () => ytModal.classList.remove('hidden'));
-  }
-
-  if (ytCloseBtn && ytModal) {
-    ytCloseBtn.addEventListener('click', () => ytModal.classList.add('hidden'));
-  }
-
-  if (ytDownloadBtn) {
-    ytDownloadBtn.addEventListener('click', async () => {
-      const url = ytUrlInput ? ytUrlInput.value.trim() : '';
-      if (!url) return alert('Ingresa un enlace de video válido.');
-
-      try {
-        ytDownloadBtn.disabled = true;
-        ytDownloadBtn.textContent = 'Descargando...';
-
-        const targetUrl = `http://localhost:5050/download?url=${encodeURIComponent(url)}`;
-        const response = await fetch(targetUrl);
-        const data = await response.json();
-
-        if (data.ok) {
-          alert(`¡Descarga completada! 🧶\n\nArchivo: ${data.filename}\nTamaño: ${data.size_mb} MB`);
-          if (ytModal) ytModal.classList.add('hidden');
-          if (ytUrlInput) ytUrlInput.value = '';
-        } else {
-          alert(`Error al descargar: ${data.error}`);
-        }
-      } catch (error) {
-        alert('No se pudo conectar con el servidor Python.\nAsegúrate de ejecutar "python downloader.py" en la terminal.');
-      } finally {
-        ytDownloadBtn.disabled = false;
-        ytDownloadBtn.textContent = 'Descargar';
-      }
-    });
-  }
-});
 // Array que recupera las etiquetas personalizadas guardadas o crea uno vacío
 let customTags = JSON.parse(localStorage.getItem('mafurafu_custom_tags')) || [];
 

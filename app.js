@@ -1044,6 +1044,19 @@ function openFinishModal(id) {
 ═══════════════════════════════════════════════════════════ */
 let currentDetailPct=30;
 
+function updateMeterCalc() {
+  const precio=Number(document.getElementById('mc-precio-madeja')?.value||0);
+  const metrosMadeja=Number(document.getElementById('mc-metros-madeja')?.value||0);
+  const metrosProyecto=Number(document.getElementById('mc-metros-proyecto')?.value||0);
+  const costoMetro=metrosMadeja>0?precio/metrosMadeja:0;
+  const total=costoMetro*metrosProyecto;
+  const cmEl=document.getElementById('mc-costo-metro');
+  if(cmEl)cmEl.textContent=formatMXN(costoMetro)+'/m';
+  const ctEl=document.getElementById('mc-costo-total');
+  if(ctEl)ctEl.textContent=formatMXN(total);
+  return total;
+}
+
 function calcQuote() {
   const mat=Number(document.getElementById('q-material')?.value||0);
   const hrs=Number(document.getElementById('q-hours')?.value||0);
@@ -1788,6 +1801,21 @@ function initEvents() {
     const titulo=prompt('Nombre para esta cotización (opcional):','')||'Cotización';
     state.quotes.unshift({id:uid('q'),titulo,...res,fecha:Date.now()});
     saveQuotes();renderQuotes();showToast('✅ Cotización guardada','success');
+  });
+
+  // CALCULADORA DE COSTO POR METRO (ayuda a llenar "Costo del material")
+  document.getElementById('toggle-meter-calc-btn')?.addEventListener('click',()=>{
+    const box=document.getElementById('meter-calc-box');
+    if(box)box.style.display=box.style.display==='none'?'block':'none';
+  });
+  ['mc-precio-madeja','mc-metros-madeja','mc-metros-proyecto'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('input',updateMeterCalc);
+  });
+  document.getElementById('mc-usar-btn')?.addEventListener('click',()=>{
+    const total=updateMeterCalc();
+    const matInput=document.getElementById('q-material');
+    if(matInput){matInput.value=total.toFixed(2);calcQuote();}
+    showToast('✅ Costo de material actualizado','success');
   });
 
   // MODO OSCURO

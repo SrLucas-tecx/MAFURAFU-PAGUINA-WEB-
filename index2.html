@@ -200,6 +200,26 @@
             <div class="form-group" style="margin-bottom:var(--space-4)">
               <label class="form-label">Costo del material (MXN)</label>
               <input class="form-input" type="number" id="q-material" placeholder="0.00" min="0" step="0.01"/>
+              <button type="button" id="toggle-meter-calc-btn" style="font-size:var(--fs-xs);color:var(--color-accent);background:none;border:none;cursor:pointer;padding:6px 0 0;font-weight:600;">🧮 ¿No sabes cuánto cuesta? Calcula el costo por metro</button>
+              <div id="meter-calc-box" style="display:none;margin-top:var(--space-2);padding:var(--space-3);background:var(--color-surface-alt);border-radius:var(--radius-md)">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)">
+                  <div>
+                    <label class="form-label" style="font-size:var(--fs-xs)">Precio de la madeja/bola (MXN)</label>
+                    <input class="form-input" type="number" id="mc-precio-madeja" placeholder="0.00" min="0" step="0.01"/>
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size:var(--fs-xs)">Metros que trae</label>
+                    <input class="form-input" type="number" id="mc-metros-madeja" placeholder="0" min="0" step="1"/>
+                  </div>
+                </div>
+                <div style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-2)">Costo por metro: <strong id="mc-costo-metro">$0.00</strong></div>
+                <div class="form-group" style="margin-top:var(--space-2);margin-bottom:0">
+                  <label class="form-label" style="font-size:var(--fs-xs)">Metros que usa este proyecto</label>
+                  <input class="form-input" type="number" id="mc-metros-proyecto" placeholder="0" min="0" step="1"/>
+                </div>
+                <div style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-2)">Costo total del material: <strong id="mc-costo-total">$0.00</strong></div>
+                <button type="button" class="btn-secondary" id="mc-usar-btn" style="width:100%;margin-top:var(--space-2);font-size:var(--fs-xs)">Usar este costo ↑</button>
+              </div>
             </div>
             <div class="form-group" style="margin-bottom:var(--space-4)">
               <label class="form-label">Horas trabajadas</label>

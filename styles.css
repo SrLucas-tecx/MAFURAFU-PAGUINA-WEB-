@@ -1396,6 +1396,58 @@ a { color: inherit; text-decoration: none; }
   margin-top: var(--space-2);
 }
 
+/* Bloques del cotizador profesional */
+.quote-block {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background: var(--color-surface-alt);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.quote-block-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+  color: var(--color-accent-dark);
+}
+.quote-block-result {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--color-border);
+}
+.quote-block-result strong { color: var(--color-text); font-size: var(--fs-sm); }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-3); }
+@media (max-width: 640px) {
+  .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+}
+.insumo-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr auto;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+.insumo-row .insumo-total {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.insumo-remove {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+@media (max-width: 760px) {
+  .insumo-row { grid-template-columns: 1fr 1fr; }
+}
+
 /* 15. MENÚ DE RESPALDO Y UTILIDADES */
 .backup-menu {
   display: none;
@@ -1445,15 +1497,22 @@ a { color: inherit; text-decoration: none; }
   position: fixed;
   bottom: var(--space-8);
   right: var(--space-8);
-  width: 320px;
+  width: 340px;
+  height: 240px;
+  min-width: 260px;
+  min-height: 180px;
+  max-width: 92vw;
+  max-height: 85vh;
   background: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 250;
   overflow: hidden;
+  resize: both;
+  flex-direction: column;
 }
-.float-player.open { display: block; }
+.float-player.open { display: flex; }
 .float-player-header {
   background: var(--color-surface-alt);
   padding: var(--space-2) var(--space-3);
@@ -1464,6 +1523,7 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid var(--color-border);
   font-size: var(--fs-xs);
   font-weight: 700;
+  flex-shrink: 0;
 }
 .float-player-title {
   flex: 1;
@@ -1481,8 +1541,8 @@ a { color: inherit; text-decoration: none; }
 .float-player-close:hover { color: var(--color-danger); }
 .float-player-body {
   position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
+  flex: 1;
+  min-height: 0;
   background: #000;
 }
 .float-player-body iframe {
@@ -1527,61 +1587,6 @@ a { color: inherit; text-decoration: none; }
   .form-row { grid-template-columns: 1fr; }
   .page-content { padding: var(--space-4); }
   .fab { bottom: var(--space-4); right: var(--space-4); }
-}
-/* 19. descargador de videos */
-.yt-btn {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(1050%);
-  background-color: #ff0000;
-  color: #ffffff;
-  border: none;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-}
-
-.yt-modal {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1001;
-}
-
-.yt-modal.hidden { display: none; }
-
-.yt-modal-content {
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  color: #333;
-}
-
-.yt-modal-content input {
-  width: 100%;
-  padding: 10px;
-  margin: 15px 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.yt-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
 }
 /* ═══ MÓDULO: TARJETAS FIJADAS (PIN) ═══════════════════════
    Estilos para tarjetas de tutorial y proyecto marcadas como

@@ -52,10 +52,6 @@ function tagLabel(id) {
   const custom=(customTags||[]).find(t=>t.id===id);
   return builtIn[id]||(custom?`${custom.emoji} ${custom.name}`:id);
 }
-
-// EDITAR AQUÍ: URL base del servidor descargador Python
-const DOWNLOADER_URL = 'http://localhost:5050';
-
 // Claves de localStorage
 const SK = {
   patterns:  'mafurafu_patterns',
@@ -102,7 +98,6 @@ let state = {
     yarnLevel:      100,
     detailPct:      30,
   },
-  downloaderOnline: false,
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -1039,55 +1034,149 @@ function openFinishModal(id) {
   const p=state.projects.find(x=>x.id===id);
   if(!p)return;
   document.getElementById('finish-project-id').value=id;
-  document.getElementById('fin-horas').value=p.horas||'';
-  document.getElementById('fin-material').value=p.costoMaterial||'';
-  document.getElementById('fin-venta').value='';
-  updateFinishResult();
+  document.getElementById('f-precio-real').value=p.soldPrice||p.suggestedPrice||'';
+  document.getElementById('f-tiempo-real').value=p.tiempoReal||'';
+  document.getElementById('f-notas').value=p.notasFinales||'';
   openModal('modal-finish');
-}
-
-function updateFinishResult() {
-  const horas=Number(document.getElementById('fin-horas')?.value||0);
-  const mat=Number(document.getElementById('fin-material')?.value||0);
-  const venta=Number(document.getElementById('fin-venta')?.value||0);
-  const hr=state.settings.hourRate;
-  const pct=30;
-  const labor=horas*hr;
-  const base=mat+labor;
-  const sugerido=base+(base*pct/100);
-  const gain=venta?venta-base:sugerido-base;
-  const box=document.getElementById('fin-breakdown');
-  if(box) box.innerHTML=`
-    <div class="quote-breakdown">
-      <div class="quote-line"><span>Material real</span><span>${formatMXN(mat)}</span></div>
-      <div class="quote-line"><span>Mano de obra (${horas}h × $${hr})</span><span>${formatMXN(labor)}</span></div>
-      <div class="quote-line"><span>Costo total</span><span>${formatMXN(base)}</span></div>
-      <div class="quote-line total"><span>Precio sugerido (+30%)</span><span>${formatMXN(sugerido)}</span></div>
-      ${venta?`<div class="quote-line"><span>Ganancia real</span><span class="price-gain ${gain<0?'negative':''}">${formatMXN(gain)}</span></div>`:''}
-    </div>`;
 }
 /* ═══════════════════════════════════════════════════════════
    MÓDULO: COTIZACIONES
 ═══════════════════════════════════════════════════════════ */
-let currentDetailPct=30;
+/* Lista de insumos del cotizador (bloque 3). Cada fila vive en el DOM;
+   este contador solo da ids únicos a los inputs. */
+let insumoSeq=0;
+
+function addInsumoRow(data) {
+  const list=document.getElementById('q-insumos-list');
+  if(!list)return;
+  const i=++insumoSeq;
+  const row=document.createElement('div');
+  row.className='insumo-row';
+  row.innerHTML=`
+    <input class="form-input q-calc insumo-nombre" type="text" placeholder="Ojitos, relleno…" value="${data?escHtml(data.nombre||''):''}"/>
+    <input class="form-input q-calc insumo-costo-pkg" type="number" placeholder="Costo paq." min="0" step="0.01" value="${data?.costoPaquete||''}"/>
+    <input class="form-input q-calc insumo-piezas-pkg" type="number" placeholder="Pzas. paq." min="0" step="1" value="${data?.piezasPaquete||''}"/>
+    <input class="form-input q-calc insumo-piezas-usadas" type="number" placeholder="Pzas. usadas" min="0" step="1" value="${data?.piezasUsadas||''}"/>
+    <span class="insumo-total" data-total="${i}">$0.00</span>
+    <button type="button" class="insumo-remove" title="Quitar insumo" aria-label="Quitar insumo">✕</button>`;
+  row.querySelector('.insumo-remove').addEventListener('click',()=>{row.remove();calcQuote();});
+  row.querySelectorAll('.q-calc').forEach(inp=>inp.addEventListener('input',calcQuote));
+  list.appendChild(row);
+  calcQuote();
+}
+
+/* Suma los insumos y de paso actualiza el subtotal visible de cada fila. */
+function calcInsumos() {
+  let total=0;
+  document.querySelectorAll('#q-insumos-list .insumo-row').forEach(row=>{
+    const costoPkg=Number(row.querySelector('.insumo-costo-pkg')?.value||0);
+    const piezasPkg=Number(row.querySelector('.insumo-piezas-pkg')?.value||0);
+    const usadas=Number(row.querySelector('.insumo-piezas-usadas')?.value||0);
+    const sub=piezasPkg>0?(costoPkg/piezasPkg)*usadas:0;
+    total+=sub;
+    const el=row.querySelector('.insumo-total');
+    if(el)el.textContent=formatMXN(sub);
+  });
+  return total;
+}
+
+function readInsumos() {
+  return [...document.querySelectorAll('#q-insumos-list .insumo-row')].map(row=>{
+    const costoPaquete=Number(row.querySelector('.insumo-costo-pkg')?.value||0);
+    const piezasPaquete=Number(row.querySelector('.insumo-piezas-pkg')?.value||0);
+    const piezasUsadas=Number(row.querySelector('.insumo-piezas-usadas')?.value||0);
+    return {
+      nombre:row.querySelector('.insumo-nombre')?.value.trim()||'Insumo',
+      costoPaquete,piezasPaquete,piezasUsadas,
+      subtotal:piezasPaquete>0?(costoPaquete/piezasPaquete)*piezasUsadas:0,
+    };
+  }).filter(x=>x.subtotal>0||x.nombre!=='Insumo');
+}
+
+/* Muestra solo el sub-formulario del modo de estambre elegido. */
+function syncYarnMode() {
+  const mode=document.getElementById('q-yarn-mode')?.value||'bolitas';
+  ['bolitas','porcentaje','gramos','fijo'].forEach(m=>{
+    const el=document.getElementById(`yarn-mode-${m}`);
+    if(el)el.style.display=(m===mode)?'block':'none';
+  });
+  return mode;
+}
+
+/* Costo del estambre según el modo elegido.
+   El modo "porcentaje" depende de la mano de obra, por eso la recibe. */
+function calcYarn(manoObra) {
+  const mode=document.getElementById('q-yarn-mode')?.value||'bolitas';
+  if(mode==='bolitas'){
+    const precio=Number(document.getElementById('q-bolita-precio')?.value||0);
+    const cant=Number(document.getElementById('q-bolita-cant')?.value||0);
+    return precio*cant;
+  }
+  if(mode==='porcentaje'){
+    const pct=Number(document.getElementById('q-yarn-pct')?.value||0);
+    return manoObra*(pct/100);
+  }
+  if(mode==='gramos'){
+    const precio=Number(document.getElementById('q-ovillo-precio')?.value||0);
+    const gramosOvillo=Number(document.getElementById('q-ovillo-gramos')?.value||0);
+    const gramosUsados=Number(document.getElementById('q-gramos-usados')?.value||0);
+    return gramosOvillo>0?(precio/gramosOvillo)*gramosUsados:0;
+  }
+  return Number(document.getElementById('q-yarn-fijo')?.value||0);
+}
 
 function calcQuote() {
-  const mat=Number(document.getElementById('q-material')?.value||0);
-  const hrs=Number(document.getElementById('q-hours')?.value||0);
-  const hr=Number(document.getElementById('q-hour-rate')?.value||state.settings.hourRate);
-  const pct=currentDetailPct;
+  // 1. Mano de obra
+  const horasTejido=Number(document.getElementById('q-horas-tejido')?.value||0);
+  const horasAcabados=Number(document.getElementById('q-horas-acabados')?.value||0);
+  const hourRate=Number(document.getElementById('q-hour-rate')?.value||state.settings.hourRate);
+  const horasTotal=horasTejido+horasAcabados;
+  const manoObra=horasTotal*hourRate;
+
+  // 2, 3, 4
+  const estambre=calcYarn(manoObra);
+  const insumos=calcInsumos();
+  const costosFijos=Number(document.getElementById('q-costos-fijos')?.value||0);
+
+  // 5. Costo base y fórmulas financieras
+  const costoBase=manoObra+estambre+insumos+costosFijos;
+  const margenPct=Math.min(Number(document.getElementById('q-margen')?.value||0),99);
+  const comisionPct=Math.min(Number(document.getElementById('q-comision')?.value||0),99);
+
+  // Precio Sugerido = Costo Base / (1 - margen). Dividir (no sumar el %)
+  // hace que el margen sea ganancia NETA real sobre el precio de venta.
+  const sugerido=margenPct>0?costoBase/(1-(margenPct/100)):costoBase;
+  const ganancia=sugerido-costoBase;
+  // La comisión se absorbe igual: dividiendo, para que al descontarla
+  // quede intacto el precio sugerido.
+  const precioFinal=comisionPct>0?sugerido/(1-(comisionPct/100)):sugerido;
+  const comisionMonto=precioFinal-sugerido;
+
   const realPrice=Number(document.getElementById('q-real-price')?.value||0);
+  const gain=realPrice?realPrice-costoBase:0;
 
-  const labor=hrs*hr;
-  const base=mat+labor;
-  const sugerido=base+(base*pct/100);
-  const gain=realPrice?realPrice-base:0;
+  // Resultados por bloque
+  const setTxt=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setTxt('qr-mano-obra',formatMXN(manoObra));
+  setTxt('qr-estambre',formatMXN(estambre));
+  setTxt('qr-insumos',formatMXN(insumos));
 
-  document.getElementById('quote-price').textContent=formatMXN(sugerido);
-  document.getElementById('ql-material').textContent=formatMXN(mat);
-  document.getElementById('ql-labor').textContent=formatMXN(labor);
-  document.getElementById('ql-pct').textContent=pct+'%';
-  document.getElementById('ql-total').textContent=formatMXN(sugerido);
+  // Desglose final
+  setTxt('quote-price',formatMXN(precioFinal));
+  setTxt('ql-labor',formatMXN(manoObra));
+  setTxt('ql-yarn',formatMXN(estambre));
+  setTxt('ql-insumos',formatMXN(insumos));
+  setTxt('ql-fijos',formatMXN(costosFijos));
+  setTxt('ql-base',formatMXN(costoBase));
+  setTxt('ql-margen-pct',margenPct);
+  setTxt('ql-ganancia',formatMXN(ganancia));
+  setTxt('ql-sugerido',formatMXN(sugerido));
+  setTxt('ql-comision-pct',comisionPct);
+  setTxt('ql-comision',formatMXN(comisionMonto));
+  setTxt('ql-total',formatMXN(precioFinal));
+
+  const comRow=document.getElementById('ql-comision-row');
+  if(comRow)comRow.style.display=comisionPct>0?'flex':'none';
 
   const gainRow=document.getElementById('ql-gain-row');
   if(gainRow){
@@ -1095,31 +1184,53 @@ function calcQuote() {
     const gainEl=document.getElementById('ql-gain');
     if(gainEl){gainEl.textContent=formatMXN(gain);gainEl.className='price-gain'+(gain<0?' negative':'');}
   }
-  return {mat,labor,base,sugerido,gain,pct,hrs,hr,realPrice};
+
+  return {
+    horasTejido,horasAcabados,horasTotal,hourRate,manoObra,
+    yarnMode:document.getElementById('q-yarn-mode')?.value||'bolitas',
+    estambre,insumos,insumosDetalle:readInsumos(),costosFijos,
+    costoBase,margenPct,ganancia,sugerido,
+    comisionPct,comisionMonto,precioFinal,
+    realPrice,gain,
+    // Compatibilidad con cotizaciones guardadas antes de este cambio
+    mat:estambre+insumos,labor:manoObra,base:costoBase,pct:margenPct,
+  };
 }
 
 function renderQuotes() {
   const hr=document.getElementById('q-hour-rate');
   if(hr&&!hr.value)hr.value=state.settings.hourRate;
+  const margen=document.getElementById('q-margen');
+  if(margen&&!margen.value)margen.value=30;
+  syncYarnMode();
+  calcQuote();
 
   const grid=document.getElementById('quotes-grid');
   if(!grid)return;
   const q=state.ui.searchQuery.toLowerCase();
   const list=state.quotes.filter(x=>!q||x.titulo?.toLowerCase().includes(q)).sort((a,b)=>b.fecha-a.fecha);
   if(!list.length){grid.innerHTML=`<div class="catalog-empty"><span class="catalog-empty-icon">💲</span><h3>Sin cotizaciones guardadas</h3><p>Calcula y guarda una cotización arriba.</p></div>`;return;}
-  grid.innerHTML=list.map(q=>`
+  grid.innerHTML=list.map(q=>{
+    const base=q.costoBase??q.base??0;
+    const final=q.precioFinal??q.sugerido??0;
+    return `
     <div class="quote-card">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <strong style="font-family:var(--font-display)">${escHtml(q.titulo||'Cotización sin nombre')}</strong>
         <span style="font-size:var(--fs-xs);color:var(--color-text-muted)">${timeAgo(q.fecha)}</span>
       </div>
       <div class="quote-breakdown">
-        <div class="quote-line"><span>Material</span><span>${formatMXN(q.mat)}</span></div>
-        <div class="quote-line"><span>Mano de obra</span><span>${formatMXN(q.labor)}</span></div>
-        <div class="quote-line total"><span>Precio sugerido</span><span>${formatMXN(q.sugerido)}</span></div>
+        <div class="quote-line"><span>Mano de obra</span><span>${formatMXN(q.manoObra??q.labor??0)}</span></div>
+        ${q.estambre!=null?`<div class="quote-line"><span>Estambre</span><span>${formatMXN(q.estambre)}</span></div>`:''}
+        ${q.insumos!=null?`<div class="quote-line"><span>Otros insumos</span><span>${formatMXN(q.insumos)}</span></div>`:''}
+        ${q.costosFijos?`<div class="quote-line"><span>Costos fijos</span><span>${formatMXN(q.costosFijos)}</span></div>`:''}
+        <div class="quote-line total"><span>Costo base</span><span>${formatMXN(base)}</span></div>
+        ${q.margenPct!=null?`<div class="quote-line"><span>Ganancia (${q.margenPct}%)</span><span>${formatMXN(q.ganancia||0)}</span></div>`:''}
+        ${q.comisionPct?`<div class="quote-line"><span>Comisión (${q.comisionPct}%)</span><span>${formatMXN(q.comisionMonto||0)}</span></div>`:''}
+        <div class="quote-line total"><span>Precio final</span><span>${formatMXN(final)}</span></div>
       </div>
       <button class="btn-danger" data-qid="${q.id}" style="font-size:var(--fs-xs);align-self:flex-end">🗑 Eliminar</button>
-    </div>`).join('');
+    </div>`;}).join('');
   grid.querySelectorAll('[data-qid]').forEach(b=>b.addEventListener('click',()=>{
     state.quotes=state.quotes.filter(x=>x.id!==b.dataset.qid);
     saveQuotes(); renderQuotes(); showToast('🗑 Cotización eliminada');
@@ -1414,37 +1525,6 @@ function openLightbox(src) {
 function closeLightbox() {
   const lb=document.getElementById('lightbox');
   if(lb)lb.classList.remove('open');
-}
-
-/* ═══════════════════════════════════════════════════════════
-   MÓDULO: DESCARGADOR PYTHON
-═══════════════════════════════════════════════════════════ */
-async function checkDownloader() {
-  const btn=document.getElementById('downloader-status-btn');
-  try {
-    const r=await fetch(`${DOWNLOADER_URL}/ping`,{signal:AbortSignal.timeout(2000)});
-    const d=await r.json();
-    state.downloaderOnline=d.ok;
-  } catch {
-    state.downloaderOnline=false;
-  }
-  if(btn){
-    btn.textContent=state.downloaderOnline?'🟢 Descargador':'🔴 Descargador';
-    btn.title=state.downloaderOnline?'Descargador activo: haz clic para ver info':'Descargador inactivo. Ejecuta downloader.py';
-  }
-}
-
-async function downloaderGetInfo(url) {
-  const r=await fetch(`${DOWNLOADER_URL}/info?url=${encodeURIComponent(url)}`);
-  return r.json();
-}
-async function downloaderDownload(url) {
-  const r=await fetch(`${DOWNLOADER_URL}/download?url=${encodeURIComponent(url)}`);
-  return r.json();
-}
-async function downloaderTranscript(url) {
-  const r=await fetch(`${DOWNLOADER_URL}/transcript?url=${encodeURIComponent(url)}`);
-  return r.json();
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1819,34 +1899,27 @@ function initEvents() {
     const id=document.getElementById('finish-project-id').value;
     const p=state.projects.find(x=>x.id===id);
     if(!p)return;
-    const horas=Number(document.getElementById('fin-horas').value||0);
-    const mat=Number(document.getElementById('fin-material').value||0);
-    const venta=Number(document.getElementById('fin-venta').value||0);
-    const hr=state.settings.hourRate;
-    const base=mat+horas*hr;
-    const sugerido=base+(base*0.3);
-    p.horas=horas;p.costoMaterial=mat;p.totalCost=base;
-    p.suggestedPrice=sugerido;
-    if(venta){p.soldPrice=venta;}
+    const precio=Number(document.getElementById('f-precio-real')?.value||0);
+    const tiempoReal=document.getElementById('f-tiempo-real')?.value.trim()||'';
+    const notasFinales=document.getElementById('f-notas')?.value.trim()||'';
+    if(precio>0) p.soldPrice=precio;
+    p.tiempoReal=tiempoReal;
+    p.notasFinales=notasFinales;
     p.estado=p.estado==='terminado'?'entregado':'terminado';
     p.fechaFin=Date.now();
     saveProjects();renderProjects();closeModal('modal-finish');
     showToast(`✅ Proyecto marcado como ${p.estado}`,'success');
   });
-  document.getElementById('fin-horas')?.addEventListener('input',updateFinishResult);
-  document.getElementById('fin-material')?.addEventListener('input',updateFinishResult);
-  document.getElementById('fin-venta')?.addEventListener('input',updateFinishResult);
 
-  // COTIZADOR
-  document.getElementById('calc-quote-btn')?.addEventListener('click',calcQuote);
-  document.getElementById('detail-selector')?.querySelectorAll('.detail-btn').forEach(b=>{
-    b.addEventListener('click',()=>{
-      document.querySelectorAll('#detail-selector .detail-btn').forEach(x=>x.classList.remove('selected'));
-      b.classList.add('selected');
-      currentDetailPct=Number(b.dataset.pct);
-      calcQuote();
-    });
+  // COTIZADOR — todo se recalcula en tiempo real al escribir
+  document.getElementById('quote-layout')?.addEventListener('input',e=>{
+    if(e.target.classList.contains('q-calc'))calcQuote();
   });
+  document.getElementById('q-yarn-mode')?.addEventListener('change',()=>{
+    syncYarnMode();
+    calcQuote();
+  });
+  document.getElementById('q-add-insumo-btn')?.addEventListener('click',()=>addInsumoRow());
   document.getElementById('save-quote-btn')?.addEventListener('click',()=>{
     const res=calcQuote();
     const titulo=prompt('Nombre para esta cotización (opcional):','')||'Cotización';
@@ -1894,12 +1967,6 @@ function initEvents() {
   // LIGHTBOX
   document.getElementById('lightbox-close')?.addEventListener('click',closeLightbox);
   document.getElementById('lightbox')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeLightbox();});
-
-  // DOWNLOADER STATUS
-  document.getElementById('downloader-status-btn')?.addEventListener('click',()=>{
-    if(!state.downloaderOnline) showToast('Ejecuta: python downloader.py','warning');
-    else showToast('🟢 Descargador activo','success');
-  });
 
   // Etiquetas tag selector (tutoriales y proyectos)
   document.querySelectorAll('#tut-tag-selector label, #proj-tag-selector label').forEach(lbl=>{
@@ -2084,36 +2151,6 @@ function initModalContext(modalId) {
       nameId:'tut-cname',saveId:'tut-csave',summaryId:'tut-selected-summary',
       countPrimarioId:'tut-count-primario',countSecundarioId:'tut-count-secundario',
       initial:[],
-    });
-
-    // Descargador
-    document.getElementById('t-link-type')?.addEventListener('change',e=>{
-      const row=document.getElementById('tut-download-row');
-      if(row)row.style.display=(e.target.value==='youtube'&&state.downloaderOnline)?'block':'none';
-    });
-    document.getElementById('tut-get-info-btn')?.addEventListener('click',async()=>{
-      const url=document.getElementById('t-url').value.trim();
-      if(!url)return;
-      const res=document.getElementById('tut-download-result');
-      if(res)res.textContent='Cargando info…';
-      const info=await downloaderGetInfo(url);
-      if(res)res.textContent=info.ok?`📹 ${info.title} · ${info.platform} · ${Math.round(info.duration/60)} min`:`❌ ${info.error}`;
-    });
-    document.getElementById('tut-transcript-btn')?.addEventListener('click',async()=>{
-      const url=document.getElementById('t-url').value.trim();
-      if(!url)return;
-      const res=document.getElementById('tut-download-result');
-      if(res)res.textContent='Obteniendo transcripción…';
-      const t=await downloaderTranscript(url);
-      if(res)res.textContent=t.ok?`📝 ${t.transcript.slice(0,300)}…`:`❌ ${t.error}`;
-    });
-    document.getElementById('tut-download-btn')?.addEventListener('click',async()=>{
-      const url=document.getElementById('t-url').value.trim();
-      if(!url)return;
-      const res=document.getElementById('tut-download-result');
-      if(res)res.textContent='⬇️ Descargando… (puede tomar un momento)';
-      const d=await downloaderDownload(url);
-      if(res)res.textContent=d.ok?`✅ Guardado: ${d.filename} (${d.size_mb} MB)`:`❌ ${d.error}`;
     });
   }
 
@@ -2457,10 +2494,6 @@ function init() {
   initSidebarMobile();
   initWorkTimer();
   navigateTo('tutoriales');
-  
-  // Verificar descargador al iniciar y cada 10s
-  updateDownloaderStatus();
-  setInterval(updateDownloaderStatus, 10000);
 
   // Botón hamburguesa visible en móvil
   if(window.innerWidth <= 768) {
@@ -2471,106 +2504,6 @@ function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 
-// Variable global del estado de conexión
-let isDownloaderOnline = false;
-
-// Verificación del servidor local (http://localhost:5050)
-async function updateDownloaderStatus() {
-  const btn = document.getElementById('downloader-status-btn');
-  if (!btn) return;
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch('http://localhost:5050/ping', { signal: controller.signal });
-    clearTimeout(timeoutId);
-    
-    const data = await res.json();
-
-    if (data.ok) {
-      isDownloaderOnline = true;
-      btn.innerHTML = '🟢 Descargador';
-      btn.style.color = 'var(--color-success, #4CAF50)';
-      btn.title = 'Servidor activo (http://localhost:5050)';
-    } else {
-      throw new Error();
-    }
-  } catch (err) {
-    isDownloaderOnline = false;
-    btn.innerHTML = '🔴 Descargador';
-    btn.style.color = 'var(--color-danger, #FF5252)';
-    btn.title = 'Servidor desconectado. Ejecuta: python downloader.py';
-  }
-}
-
-// Evento al hacer clic en el botón del header
-document.getElementById('downloader-status-btn')?.addEventListener('click', async () => {
-  if (!isDownloaderOnline) {
-    alert('⚠️ El servidor de descargas no está activo.\n\nAbre tu terminal en la carpeta del proyecto y ejecuta:\npython downloader.py');
-    return;
-  }
-
-  try {
-    const res = await fetch('http://localhost:5050/downloads');
-    const data = await res.json();
-
-    if (data.ok && data.files.length > 0) {
-      const lista = data.files.slice(0, 10).map(f => `• ${f.name} (${f.size_mb} MB)`).join('\n');
-      alert(`📁 Últimos videos descargados en MAFURAFU_Videos:\n\n${lista}`);
-    } else {
-      alert('🟢 Servidor activo.\nLa carpeta MAFURAFU_Videos aún no tiene descargas.');
-    }
-  } catch (err) {
-    alert('Error al consultar los archivos del servidor local.');
-  }
-});
-
-/* ═══ MÓDULO: YouTube Downloader ═══ */
-document.addEventListener('DOMContentLoaded', () => {
-  const ytBtn = document.getElementById('yt-toggle-btn');
-  const ytModal = document.getElementById('yt-modal');
-  const ytCloseBtn = document.getElementById('yt-close-btn');
-  const ytDownloadBtn = document.getElementById('yt-download-btn');
-  const ytUrlInput = document.getElementById('yt-url-input');
-
-  if (ytBtn && ytModal) {
-    ytBtn.addEventListener('click', () => ytModal.classList.remove('hidden'));
-  }
-
-  if (ytCloseBtn && ytModal) {
-    ytCloseBtn.addEventListener('click', () => ytModal.classList.add('hidden'));
-  }
-
-  if (ytDownloadBtn) {
-    ytDownloadBtn.addEventListener('click', async () => {
-      const url = ytUrlInput ? ytUrlInput.value.trim() : '';
-      if (!url) return alert('Ingresa un enlace de video válido.');
-
-      try {
-        ytDownloadBtn.disabled = true;
-        ytDownloadBtn.textContent = 'Descargando...';
-
-        const targetUrl = `http://localhost:5050/download?url=${encodeURIComponent(url)}`;
-        const response = await fetch(targetUrl);
-        const data = await response.json();
-
-        if (data.ok) {
-          alert(`¡Descarga completada! 🧶\n\nArchivo: ${data.filename}\nTamaño: ${data.size_mb} MB`);
-          if (ytModal) ytModal.classList.add('hidden');
-          if (ytUrlInput) ytUrlInput.value = '';
-        } else {
-          alert(`Error al descargar: ${data.error}`);
-        }
-      } catch (error) {
-        alert('No se pudo conectar con el servidor Python.\nAsegúrate de ejecutar "python downloader.py" en la terminal.');
-      } finally {
-        ytDownloadBtn.disabled = false;
-        ytDownloadBtn.textContent = 'Descargar';
-      }
-    });
-  }
-});
 // Array que recupera las etiquetas personalizadas guardadas o crea uno vacío
 let customTags = JSON.parse(localStorage.getItem('mafurafu_custom_tags')) || [];
 

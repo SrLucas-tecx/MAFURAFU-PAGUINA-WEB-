@@ -112,24 +112,6 @@
       </div>
     </div>
   </aside>
-  <!-- Botón flotante con ícono de YouTube -->
-<button id="yt-toggle-btn" class="yt-btn" title="Pegar enlace de YouTube">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-  </svg>
-</button>
-
-<!-- Ventana/Pestaña emergente -->
-<div id="yt-modal" class="yt-modal hidden">
-  <div class="yt-modal-content">
-    <h3>Descargar de YouTube</h3>
-    <input type="text" id="yt-url-input" placeholder="Pega el enlace aquí (https://...)">
-    <div class="yt-actions">
-      <button id="yt-download-btn" class="btn-primary">Descargar</button>
-      <button id="yt-close-btn" class="btn-secondary">Cancelar</button>
-    </div>
-  </div>
-</div>
 
   <!-- Overlay para cerrar sidebar en móvil -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -149,11 +131,6 @@
         <div class="search-wrap">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="search" id="search-input" class="search-input" placeholder="Buscar…" autocomplete="off"/>
-        </div>
-        <div class="header-actions">
-          <button class="btn-icon" id="downloader-status-btn" title="Estado del descargador" style="font-size:.7rem;font-weight:700;gap:4px;width:auto;padding:0 10px;">
-            🔴 Descargador
-          </button>
         </div>
       </div>
       <!-- Paleta de colores (solo en tutoriales y proyectos) -->
@@ -220,54 +197,155 @@
           <!-- Formulario -->
           <div class="quote-card">
             <h3 style="font-family:var(--font-display);font-weight:800;font-size:var(--fs-md)">Datos del proyecto</h3>
-            <div class="form-group" style="margin-bottom:var(--space-4)">
-              <label class="form-label">Costo del material (MXN)</label>
-              <input class="form-input" type="number" id="q-material" placeholder="0.00" min="0" step="0.01"/>
+
+            <!-- 1. TIEMPOS / MANO DE OBRA -->
+            <div class="quote-block">
+              <div class="quote-block-title">⏱️ 1. Tiempos (mano de obra)</div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label class="form-label">Horas de tejido</label>
+                  <input class="form-input q-calc" type="number" id="q-horas-tejido" placeholder="0" min="0" step="0.5"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Horas de acabados / empaque</label>
+                  <input class="form-input q-calc" type="number" id="q-horas-acabados" placeholder="0" min="0" step="0.5"/>
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">
+                  Pago por hora (MXN)
+                  <button type="button" id="edit-hour-rate-btn" style="font-size:var(--fs-xs);color:var(--color-accent);background:none;border:none;cursor:pointer;padding:0 4px;font-weight:600;">✏️ editar</button>
+                </label>
+                <div style="display:flex;align-items:center;gap:var(--space-2)">
+                  <input class="form-input q-calc" type="number" id="q-hour-rate" placeholder="200.00" min="0" step="1" style="max-width:140px"/>
+                  <span style="font-size:var(--fs-xs);color:var(--color-text-muted)">$/hr · Base México 2026</span>
+                </div>
+              </div>
+              <div class="quote-block-result">Costo mano de obra: <strong id="qr-mano-obra">$0.00</strong></div>
             </div>
-            <div class="form-group" style="margin-bottom:var(--space-4)">
-              <label class="form-label">Horas trabajadas</label>
-              <input class="form-input" type="number" id="q-hours" placeholder="0" min="0" step="0.5"/>
+
+            <!-- 2. ESTAMBRE / HILO -->
+            <div class="quote-block">
+              <div class="quote-block-title">🧶 2. Estambre / hilo</div>
+              <div class="form-group">
+                <label class="form-label">¿Cómo quieres calcularlo?</label>
+                <select class="form-select q-calc" id="q-yarn-mode">
+                  <option value="bolitas">Por bolitas</option>
+                  <option value="porcentaje">Porcentaje del tiempo (piezas mini)</option>
+                  <option value="gramos">Por gramos</option>
+                  <option value="fijo">Monto fijo</option>
+                </select>
+              </div>
+
+              <div class="yarn-mode" id="yarn-mode-bolitas">
+                <div class="form-row-2">
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Precio por bolita (MXN)</label>
+                    <input class="form-input q-calc" type="number" id="q-bolita-precio" placeholder="0.00" min="0" step="0.01"/>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Bolitas usadas</label>
+                    <input class="form-input q-calc" type="number" id="q-bolita-cant" placeholder="0" min="0" step="0.25"/>
+                  </div>
+                </div>
+              </div>
+
+              <div class="yarn-mode" id="yarn-mode-porcentaje" style="display:none">
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">% extra sobre la mano de obra</label>
+                  <input class="form-input q-calc" type="number" id="q-yarn-pct" placeholder="10" min="0" step="1"/>
+                  <p class="form-hint">Útil en piezas mini donde pesar el estambre no es práctico.</p>
+                </div>
+              </div>
+
+              <div class="yarn-mode" id="yarn-mode-gramos" style="display:none">
+                <div class="form-row-3">
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Precio del ovillo</label>
+                    <input class="form-input q-calc" type="number" id="q-ovillo-precio" placeholder="0.00" min="0" step="0.01"/>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Gramos del ovillo</label>
+                    <input class="form-input q-calc" type="number" id="q-ovillo-gramos" placeholder="100" min="0" step="1"/>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Gramos pesados</label>
+                    <input class="form-input q-calc" type="number" id="q-gramos-usados" placeholder="0" min="0" step="1"/>
+                  </div>
+                </div>
+              </div>
+
+              <div class="yarn-mode" id="yarn-mode-fijo" style="display:none">
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Costo directo del estambre (MXN)</label>
+                  <input class="form-input q-calc" type="number" id="q-yarn-fijo" placeholder="0.00" min="0" step="0.01"/>
+                </div>
+              </div>
+
+              <div class="quote-block-result">Costo estambre: <strong id="qr-estambre">$0.00</strong></div>
             </div>
-            <div class="form-group" style="margin-bottom:var(--space-4)">
-              <label class="form-label">
-                Costo por hora (MXN)
-                <button type="button" id="edit-hour-rate-btn" style="font-size:var(--fs-xs);color:var(--color-accent);background:none;border:none;cursor:pointer;padding:0 4px;font-weight:600;">✏️ editar</button>
-              </label>
-              <div style="display:flex;align-items:center;gap:var(--space-2)">
-                <input class="form-input" type="number" id="q-hour-rate" placeholder="200.00" min="0" step="1" style="max-width:140px"/>
-                <span style="font-size:var(--fs-xs);color:var(--color-text-muted)">$/hr · Base México 2026</span>
+
+            <!-- 3. OTROS INSUMOS -->
+            <div class="quote-block">
+              <div class="quote-block-title">📦 3. Otros insumos</div>
+              <p class="form-hint" style="margin-top:0">Ojitos, relleno, cajas, listones… Se cobra solo la parte que usaste del paquete.</p>
+              <div id="q-insumos-list"></div>
+              <button type="button" class="btn-secondary" id="q-add-insumo-btn" style="font-size:var(--fs-xs);width:100%">+ Agregar insumo</button>
+              <div class="quote-block-result">Costo insumos: <strong id="qr-insumos">$0.00</strong></div>
+            </div>
+
+            <!-- 4. COSTOS FIJOS -->
+            <div class="quote-block">
+              <div class="quote-block-title">⚡ 4. Costos fijos / desgaste</div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Costos fijos / desgaste (MXN)</label>
+                <input class="form-input q-calc" type="number" id="q-costos-fijos" placeholder="0.00" min="0" step="0.01"/>
+                <p class="form-hint">Luz, agua, internet, desgaste de agujas y herramientas.</p>
               </div>
             </div>
-            <div class="form-group" style="margin-bottom:var(--space-2)">
-              <label class="form-label">Nivel de detalle</label>
-              <div class="quote-detail-selector" id="detail-selector">
-                <button class="detail-btn" data-pct="20">Sin detalles<br><small>+20%</small></button>
-                <button class="detail-btn" data-pct="25">Poco detalle<br><small>+25%</small></button>
-                <button class="detail-btn selected" data-pct="30">Det. moderados<br><small>+30%</small></button>
-                <button class="detail-btn" data-pct="35">Mucho detalle<br><small>+35%</small></button>
-                <button class="detail-btn" data-pct="40">Demasiados det.<br><small>+40%</small></button>
+
+            <!-- 5. GANANCIA Y COMISIONES -->
+            <div class="quote-block">
+              <div class="quote-block-title">💰 5. Ganancia y comisiones</div>
+              <div class="form-row-2">
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Margen de ganancia (%)</label>
+                  <input class="form-input q-calc" type="number" id="q-margen" placeholder="30" min="0" max="99" step="1"/>
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Comisión plataforma / tarjeta (%)</label>
+                  <input class="form-input q-calc" type="number" id="q-comision" placeholder="0" min="0" max="99" step="0.1"/>
+                </div>
               </div>
+              <p class="form-hint">La comisión se absorbe en el precio, para que la ganancia no se te vaya en el cobro con terminal o Etsy.</p>
             </div>
-            <div class="form-group" style="margin-bottom:var(--space-2)">
+
+            <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Precio de venta real (si ya tiene uno)</label>
-              <input class="form-input" type="number" id="q-real-price" placeholder="Opcional" min="0" step="1"/>
+              <input class="form-input q-calc" type="number" id="q-real-price" placeholder="Opcional" min="0" step="1"/>
             </div>
-            <button class="btn-primary" id="calc-quote-btn" style="width:100%">Calcular precio 💲</button>
           </div>
+
           <!-- Resultado -->
-          <div class="quote-result-box" id="quote-result-box" style="align-self:start">
-            <div class="quote-result-title">PRECIO SUGERIDO DE VENTA</div>
+          <div class="quote-result-box" id="quote-result-box" style="align-self:start;position:sticky;top:var(--space-4)">
+            <div class="quote-result-title">PRECIO FINAL AL PÚBLICO</div>
             <div class="quote-result-price" id="quote-price">$0.00</div>
             <div class="quote-breakdown" id="quote-breakdown">
-              <div class="quote-line"><span>Costo material</span><span id="ql-material">$0</span></div>
               <div class="quote-line"><span>Mano de obra</span><span id="ql-labor">$0</span></div>
-              <div class="quote-line"><span>% detalle</span><span id="ql-pct">30%</span></div>
-              <div class="quote-line total"><span>Precio sugerido</span><span id="ql-total">$0</span></div>
-              <div class="quote-line" id="ql-gain-row" style="display:none"><span>Ganancia estimada</span><span id="ql-gain" class="price-gain">$0</span></div>
+              <div class="quote-line"><span>Estambre</span><span id="ql-yarn">$0</span></div>
+              <div class="quote-line"><span>Otros insumos</span><span id="ql-insumos">$0</span></div>
+              <div class="quote-line"><span>Costos fijos / desgaste</span><span id="ql-fijos">$0</span></div>
+              <div class="quote-line total"><span>Costo base total</span><span id="ql-base">$0</span></div>
+              <div class="quote-line"><span>Margen de ganancia (<span id="ql-margen-pct">30</span>%)</span><span id="ql-ganancia">$0</span></div>
+              <div class="quote-line total"><span>Precio sugerido</span><span id="ql-sugerido">$0</span></div>
+              <div class="quote-line" id="ql-comision-row" style="display:none"><span>Comisión (<span id="ql-comision-pct">0</span>%)</span><span id="ql-comision">$0</span></div>
+              <div class="quote-line total"><span>Precio final al público</span><span id="ql-total">$0</span></div>
+              <div class="quote-line" id="ql-gain-row" style="display:none"><span>Ganancia vs. precio real</span><span id="ql-gain" class="price-gain">$0</span></div>
             </div>
             <button class="btn-primary" id="save-quote-btn" style="width:100%;margin-top:var(--space-4)">Guardar cotización</button>
           </div>
         </div>
+
         <!-- Lista de cotizaciones guardadas -->
         <div style="margin-top:var(--space-8)">
           <div class="section-header"><h2 class="section-title">📋 Cotizaciones guardadas</h2></div>
@@ -527,16 +605,6 @@
         <input class="form-input" type="url" id="t-url" placeholder="https://…" style="flex:1"/>
       </div>
       <p class="form-hint">YouTube se incrusta automáticamente. Otros tipos se abren en nueva pestaña.</p>
-    </div>
-    <!-- DESCARGAR VIDEO -->
-    <div class="form-group" id="tut-download-row" style="display:none">
-      <label class="form-label">⬇️ Descargador</label>
-      <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">
-        <button type="button" class="btn-secondary" id="tut-get-info-btn" style="font-size:var(--fs-xs)">🔍 Obtener info</button>
-        <button type="button" class="btn-secondary" id="tut-transcript-btn" style="font-size:var(--fs-xs)">📝 Transcripción</button>
-        <button type="button" class="btn-primary" id="tut-download-btn" style="font-size:var(--fs-xs)">⬇️ Descargar video</button>
-      </div>
-      <div id="tut-download-result" style="margin-top:var(--space-2);font-size:var(--fs-xs);color:var(--color-text-muted)"></div>
     </div>
     <!-- PATRÓN ESCRITO (con color para marcar cambios de estambre) -->
     <div class="form-group">
@@ -899,15 +967,6 @@
       <button class="btn-primary" id="vp-save-btn">Guardar cambios</button>
     </div>
   </div>
-</div>
-<!-- Fila de descarga por Python (se muestra solo si el tipo es youtube) -->
-<div id="tut-download-row" style="display: none; margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--color-border);">
-  <label style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; display: block;">⚡ Herramientas de descarga local</label>
-  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-    <button type="button" class="btn-secondary" id="tut-get-info-btn" style="font-size: 0.8rem;">🔍 Info video</button>
-    <button type="button" class="btn-primary" id="tut-download-btn" style="font-size: 0.8rem;">⬇️ Descargar MP4</button>
-  </div>
-  <div id="tut-download-result" style="margin-top: 8px; font-size: 0.8rem; color: var(--color-text-muted);"></div>
 </div>
 
 <script src="app.js"></script>

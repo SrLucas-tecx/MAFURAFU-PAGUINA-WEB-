@@ -1042,38 +1042,141 @@ function openFinishModal(id) {
 /* ═══════════════════════════════════════════════════════════
    MÓDULO: COTIZACIONES
 ═══════════════════════════════════════════════════════════ */
-let currentDetailPct=30;
+/* Lista de insumos del cotizador (bloque 3). Cada fila vive en el DOM;
+   este contador solo da ids únicos a los inputs. */
+let insumoSeq=0;
 
-function updateMeterCalc() {
-  const precio=Number(document.getElementById('mc-precio-madeja')?.value||0);
-  const metrosMadeja=Number(document.getElementById('mc-metros-madeja')?.value||0);
-  const metrosProyecto=Number(document.getElementById('mc-metros-proyecto')?.value||0);
-  const costoMetro=metrosMadeja>0?precio/metrosMadeja:0;
-  const total=costoMetro*metrosProyecto;
-  const cmEl=document.getElementById('mc-costo-metro');
-  if(cmEl)cmEl.textContent=formatMXN(costoMetro)+'/m';
-  const ctEl=document.getElementById('mc-costo-total');
-  if(ctEl)ctEl.textContent=formatMXN(total);
+function addInsumoRow(data) {
+  const list=document.getElementById('q-insumos-list');
+  if(!list)return;
+  const i=++insumoSeq;
+  const row=document.createElement('div');
+  row.className='insumo-row';
+  row.innerHTML=`
+    <input class="form-input q-calc insumo-nombre" type="text" placeholder="Ojitos, relleno…" value="${data?escHtml(data.nombre||''):''}"/>
+    <input class="form-input q-calc insumo-costo-pkg" type="number" placeholder="Costo paq." min="0" step="0.01" value="${data?.costoPaquete||''}"/>
+    <input class="form-input q-calc insumo-piezas-pkg" type="number" placeholder="Pzas. paq." min="0" step="1" value="${data?.piezasPaquete||''}"/>
+    <input class="form-input q-calc insumo-piezas-usadas" type="number" placeholder="Pzas. usadas" min="0" step="1" value="${data?.piezasUsadas||''}"/>
+    <span class="insumo-total" data-total="${i}">$0.00</span>
+    <button type="button" class="insumo-remove" title="Quitar insumo" aria-label="Quitar insumo">✕</button>`;
+  row.querySelector('.insumo-remove').addEventListener('click',()=>{row.remove();calcQuote();});
+  row.querySelectorAll('.q-calc').forEach(inp=>inp.addEventListener('input',calcQuote));
+  list.appendChild(row);
+  calcQuote();
+}
+
+/* Suma los insumos y de paso actualiza el subtotal visible de cada fila. */
+function calcInsumos() {
+  let total=0;
+  document.querySelectorAll('#q-insumos-list .insumo-row').forEach(row=>{
+    const costoPkg=Number(row.querySelector('.insumo-costo-pkg')?.value||0);
+    const piezasPkg=Number(row.querySelector('.insumo-piezas-pkg')?.value||0);
+    const usadas=Number(row.querySelector('.insumo-piezas-usadas')?.value||0);
+    const sub=piezasPkg>0?(costoPkg/piezasPkg)*usadas:0;
+    total+=sub;
+    const el=row.querySelector('.insumo-total');
+    if(el)el.textContent=formatMXN(sub);
+  });
   return total;
 }
 
+function readInsumos() {
+  return [...document.querySelectorAll('#q-insumos-list .insumo-row')].map(row=>{
+    const costoPaquete=Number(row.querySelector('.insumo-costo-pkg')?.value||0);
+    const piezasPaquete=Number(row.querySelector('.insumo-piezas-pkg')?.value||0);
+    const piezasUsadas=Number(row.querySelector('.insumo-piezas-usadas')?.value||0);
+    return {
+      nombre:row.querySelector('.insumo-nombre')?.value.trim()||'Insumo',
+      costoPaquete,piezasPaquete,piezasUsadas,
+      subtotal:piezasPaquete>0?(costoPaquete/piezasPaquete)*piezasUsadas:0,
+    };
+  }).filter(x=>x.subtotal>0||x.nombre!=='Insumo');
+}
+
+/* Muestra solo el sub-formulario del modo de estambre elegido. */
+function syncYarnMode() {
+  const mode=document.getElementById('q-yarn-mode')?.value||'bolitas';
+  ['bolitas','porcentaje','gramos','fijo'].forEach(m=>{
+    const el=document.getElementById(`yarn-mode-${m}`);
+    if(el)el.style.display=(m===mode)?'block':'none';
+  });
+  return mode;
+}
+
+/* Costo del estambre según el modo elegido.
+   El modo "porcentaje" depende de la mano de obra, por eso la recibe. */
+function calcYarn(manoObra) {
+  const mode=document.getElementById('q-yarn-mode')?.value||'bolitas';
+  if(mode==='bolitas'){
+    const precio=Number(document.getElementById('q-bolita-precio')?.value||0);
+    const cant=Number(document.getElementById('q-bolita-cant')?.value||0);
+    return precio*cant;
+  }
+  if(mode==='porcentaje'){
+    const pct=Number(document.getElementById('q-yarn-pct')?.value||0);
+    return manoObra*(pct/100);
+  }
+  if(mode==='gramos'){
+    const precio=Number(document.getElementById('q-ovillo-precio')?.value||0);
+    const gramosOvillo=Number(document.getElementById('q-ovillo-gramos')?.value||0);
+    const gramosUsados=Number(document.getElementById('q-gramos-usados')?.value||0);
+    return gramosOvillo>0?(precio/gramosOvillo)*gramosUsados:0;
+  }
+  return Number(document.getElementById('q-yarn-fijo')?.value||0);
+}
+
 function calcQuote() {
-  const mat=Number(document.getElementById('q-material')?.value||0);
-  const hrs=Number(document.getElementById('q-hours')?.value||0);
-  const hr=Number(document.getElementById('q-hour-rate')?.value||state.settings.hourRate);
-  const pct=currentDetailPct;
+  // 1. Mano de obra
+  const horasTejido=Number(document.getElementById('q-horas-tejido')?.value||0);
+  const horasAcabados=Number(document.getElementById('q-horas-acabados')?.value||0);
+  const hourRate=Number(document.getElementById('q-hour-rate')?.value||state.settings.hourRate);
+  const horasTotal=horasTejido+horasAcabados;
+  const manoObra=horasTotal*hourRate;
+
+  // 2, 3, 4
+  const estambre=calcYarn(manoObra);
+  const insumos=calcInsumos();
+  const costosFijos=Number(document.getElementById('q-costos-fijos')?.value||0);
+
+  // 5. Costo base y fórmulas financieras
+  const costoBase=manoObra+estambre+insumos+costosFijos;
+  const margenPct=Math.min(Number(document.getElementById('q-margen')?.value||0),99);
+  const comisionPct=Math.min(Number(document.getElementById('q-comision')?.value||0),99);
+
+  // Precio Sugerido = Costo Base / (1 - margen). Dividir (no sumar el %)
+  // hace que el margen sea ganancia NETA real sobre el precio de venta.
+  const sugerido=margenPct>0?costoBase/(1-(margenPct/100)):costoBase;
+  const ganancia=sugerido-costoBase;
+  // La comisión se absorbe igual: dividiendo, para que al descontarla
+  // quede intacto el precio sugerido.
+  const precioFinal=comisionPct>0?sugerido/(1-(comisionPct/100)):sugerido;
+  const comisionMonto=precioFinal-sugerido;
+
   const realPrice=Number(document.getElementById('q-real-price')?.value||0);
+  const gain=realPrice?realPrice-costoBase:0;
 
-  const labor=hrs*hr;
-  const base=mat+labor;
-  const sugerido=base+(base*pct/100);
-  const gain=realPrice?realPrice-base:0;
+  // Resultados por bloque
+  const setTxt=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setTxt('qr-mano-obra',formatMXN(manoObra));
+  setTxt('qr-estambre',formatMXN(estambre));
+  setTxt('qr-insumos',formatMXN(insumos));
 
-  document.getElementById('quote-price').textContent=formatMXN(sugerido);
-  document.getElementById('ql-material').textContent=formatMXN(mat);
-  document.getElementById('ql-labor').textContent=formatMXN(labor);
-  document.getElementById('ql-pct').textContent=pct+'%';
-  document.getElementById('ql-total').textContent=formatMXN(sugerido);
+  // Desglose final
+  setTxt('quote-price',formatMXN(precioFinal));
+  setTxt('ql-labor',formatMXN(manoObra));
+  setTxt('ql-yarn',formatMXN(estambre));
+  setTxt('ql-insumos',formatMXN(insumos));
+  setTxt('ql-fijos',formatMXN(costosFijos));
+  setTxt('ql-base',formatMXN(costoBase));
+  setTxt('ql-margen-pct',margenPct);
+  setTxt('ql-ganancia',formatMXN(ganancia));
+  setTxt('ql-sugerido',formatMXN(sugerido));
+  setTxt('ql-comision-pct',comisionPct);
+  setTxt('ql-comision',formatMXN(comisionMonto));
+  setTxt('ql-total',formatMXN(precioFinal));
+
+  const comRow=document.getElementById('ql-comision-row');
+  if(comRow)comRow.style.display=comisionPct>0?'flex':'none';
 
   const gainRow=document.getElementById('ql-gain-row');
   if(gainRow){
@@ -1081,31 +1184,53 @@ function calcQuote() {
     const gainEl=document.getElementById('ql-gain');
     if(gainEl){gainEl.textContent=formatMXN(gain);gainEl.className='price-gain'+(gain<0?' negative':'');}
   }
-  return {mat,labor,base,sugerido,gain,pct,hrs,hr,realPrice};
+
+  return {
+    horasTejido,horasAcabados,horasTotal,hourRate,manoObra,
+    yarnMode:document.getElementById('q-yarn-mode')?.value||'bolitas',
+    estambre,insumos,insumosDetalle:readInsumos(),costosFijos,
+    costoBase,margenPct,ganancia,sugerido,
+    comisionPct,comisionMonto,precioFinal,
+    realPrice,gain,
+    // Compatibilidad con cotizaciones guardadas antes de este cambio
+    mat:estambre+insumos,labor:manoObra,base:costoBase,pct:margenPct,
+  };
 }
 
 function renderQuotes() {
   const hr=document.getElementById('q-hour-rate');
   if(hr&&!hr.value)hr.value=state.settings.hourRate;
+  const margen=document.getElementById('q-margen');
+  if(margen&&!margen.value)margen.value=30;
+  syncYarnMode();
+  calcQuote();
 
   const grid=document.getElementById('quotes-grid');
   if(!grid)return;
   const q=state.ui.searchQuery.toLowerCase();
   const list=state.quotes.filter(x=>!q||x.titulo?.toLowerCase().includes(q)).sort((a,b)=>b.fecha-a.fecha);
   if(!list.length){grid.innerHTML=`<div class="catalog-empty"><span class="catalog-empty-icon">💲</span><h3>Sin cotizaciones guardadas</h3><p>Calcula y guarda una cotización arriba.</p></div>`;return;}
-  grid.innerHTML=list.map(q=>`
+  grid.innerHTML=list.map(q=>{
+    const base=q.costoBase??q.base??0;
+    const final=q.precioFinal??q.sugerido??0;
+    return `
     <div class="quote-card">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <strong style="font-family:var(--font-display)">${escHtml(q.titulo||'Cotización sin nombre')}</strong>
         <span style="font-size:var(--fs-xs);color:var(--color-text-muted)">${timeAgo(q.fecha)}</span>
       </div>
       <div class="quote-breakdown">
-        <div class="quote-line"><span>Material</span><span>${formatMXN(q.mat)}</span></div>
-        <div class="quote-line"><span>Mano de obra</span><span>${formatMXN(q.labor)}</span></div>
-        <div class="quote-line total"><span>Precio sugerido</span><span>${formatMXN(q.sugerido)}</span></div>
+        <div class="quote-line"><span>Mano de obra</span><span>${formatMXN(q.manoObra??q.labor??0)}</span></div>
+        ${q.estambre!=null?`<div class="quote-line"><span>Estambre</span><span>${formatMXN(q.estambre)}</span></div>`:''}
+        ${q.insumos!=null?`<div class="quote-line"><span>Otros insumos</span><span>${formatMXN(q.insumos)}</span></div>`:''}
+        ${q.costosFijos?`<div class="quote-line"><span>Costos fijos</span><span>${formatMXN(q.costosFijos)}</span></div>`:''}
+        <div class="quote-line total"><span>Costo base</span><span>${formatMXN(base)}</span></div>
+        ${q.margenPct!=null?`<div class="quote-line"><span>Ganancia (${q.margenPct}%)</span><span>${formatMXN(q.ganancia||0)}</span></div>`:''}
+        ${q.comisionPct?`<div class="quote-line"><span>Comisión (${q.comisionPct}%)</span><span>${formatMXN(q.comisionMonto||0)}</span></div>`:''}
+        <div class="quote-line total"><span>Precio final</span><span>${formatMXN(final)}</span></div>
       </div>
       <button class="btn-danger" data-qid="${q.id}" style="font-size:var(--fs-xs);align-self:flex-end">🗑 Eliminar</button>
-    </div>`).join('');
+    </div>`;}).join('');
   grid.querySelectorAll('[data-qid]').forEach(b=>b.addEventListener('click',()=>{
     state.quotes=state.quotes.filter(x=>x.id!==b.dataset.qid);
     saveQuotes(); renderQuotes(); showToast('🗑 Cotización eliminada');
@@ -1786,36 +1911,20 @@ function initEvents() {
     showToast(`✅ Proyecto marcado como ${p.estado}`,'success');
   });
 
-  // COTIZADOR
-  document.getElementById('calc-quote-btn')?.addEventListener('click',calcQuote);
-  document.getElementById('detail-selector')?.querySelectorAll('.detail-btn').forEach(b=>{
-    b.addEventListener('click',()=>{
-      document.querySelectorAll('#detail-selector .detail-btn').forEach(x=>x.classList.remove('selected'));
-      b.classList.add('selected');
-      currentDetailPct=Number(b.dataset.pct);
-      calcQuote();
-    });
+  // COTIZADOR — todo se recalcula en tiempo real al escribir
+  document.getElementById('quote-layout')?.addEventListener('input',e=>{
+    if(e.target.classList.contains('q-calc'))calcQuote();
   });
+  document.getElementById('q-yarn-mode')?.addEventListener('change',()=>{
+    syncYarnMode();
+    calcQuote();
+  });
+  document.getElementById('q-add-insumo-btn')?.addEventListener('click',()=>addInsumoRow());
   document.getElementById('save-quote-btn')?.addEventListener('click',()=>{
     const res=calcQuote();
     const titulo=prompt('Nombre para esta cotización (opcional):','')||'Cotización';
     state.quotes.unshift({id:uid('q'),titulo,...res,fecha:Date.now()});
     saveQuotes();renderQuotes();showToast('✅ Cotización guardada','success');
-  });
-
-  // CALCULADORA DE COSTO POR METRO (ayuda a llenar "Costo del material")
-  document.getElementById('toggle-meter-calc-btn')?.addEventListener('click',()=>{
-    const box=document.getElementById('meter-calc-box');
-    if(box)box.style.display=box.style.display==='none'?'block':'none';
-  });
-  ['mc-precio-madeja','mc-metros-madeja','mc-metros-proyecto'].forEach(id=>{
-    document.getElementById(id)?.addEventListener('input',updateMeterCalc);
-  });
-  document.getElementById('mc-usar-btn')?.addEventListener('click',()=>{
-    const total=updateMeterCalc();
-    const matInput=document.getElementById('q-material');
-    if(matInput){matInput.value=total.toFixed(2);calcQuote();}
-    showToast('✅ Costo de material actualizado','success');
   });
 
   // MODO OSCURO
